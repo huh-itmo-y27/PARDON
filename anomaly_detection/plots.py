@@ -5,9 +5,9 @@ import matplotlib.pyplot as plt
 
 _LAST_AX = None
 _PLOT_STYLE = "fivethirtyeight"
-_DISPLAY_DPI = 90
-_DISPLAY_HEIGHT_PX = 220
-_DEFAULT_FIGSIZE = (20, 4)
+_DISPLAY_DPI = 150
+_DISPLAY_HEIGHT_PX = 280
+_DEFAULT_FIGSIZE = (28, 4)
 
 
 class PlotResult:
