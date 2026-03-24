@@ -4,7 +4,9 @@
 
 PROJECT_NAME = itmo-aiii27-mlops
 PYTHON_VERSION = 3.10
-PYTHON_INTERPRETER = python
+PYTHON_INTERPRETER = uv run python
+UV_HTTP_TIMEOUT ?= 120
+UV_HTTP_RETRIES ?= 3
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -14,7 +16,7 @@ PYTHON_INTERPRETER = python
 ## Install Python dependencies
 .PHONY: requirements
 requirements:
-	uv sync
+	UV_HTTP_TIMEOUT=$(UV_HTTP_TIMEOUT) UV_HTTP_RETRIES=$(UV_HTTP_RETRIES) uv sync --dev
 	
 
 
@@ -29,21 +31,21 @@ clean:
 ## Lint using ruff (use `make format` to do formatting)
 .PHONY: lint
 lint:
-	ruff format --check
-	ruff check
+	uv run ruff format --check
+	uv run ruff check
 
 ## Format source code with ruff
 .PHONY: format
 format:
-	ruff check --fix
-	ruff format
+	uv run ruff check --fix
+	uv run ruff format
 
 
 
 ## Run tests
 .PHONY: test
 test:
-	python -m pytest tests
+	uv run pytest tests
 ## Download Data from storage system
 .PHONY: sync_data_down
 sync_data_down:
@@ -67,6 +69,7 @@ create_environment:
 	@echo ">>> New uv virtual environment created. Activate with:"
 	@echo ">>> Windows: .\\\\.venv\\\\Scripts\\\\activate"
 	@echo ">>> Unix/macOS: source ./.venv/bin/activate"
+	@echo ">>> Then install deps with: make requirements"
 	
 
 

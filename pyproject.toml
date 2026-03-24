@@ -11,10 +11,8 @@ requires-python = ">=3.10,<3.11"
 
 dependencies = [
   "awscli",
-  "ipython",
   "jupyterlab",
   "loguru",
-  "matplotlib",
   "mkdocs",
   "notebook",
   "numpy",
@@ -40,11 +38,11 @@ dev = [
 ]
 
 [tool.uv.sources]
-arimafd = { git = "https://github.com/InSuperposition/arimafd.git", branch = "master" }
+arimafd = { git = "https://github.com/waico/arimafd.git", branch = "master" }
 
 
 [tool.ruff]
-line-length = 99
+line-length = 80
 src = ["anomaly_detection"]
 include = ["pyproject.toml", "anomaly_detection/**/*.py"]
 
@@ -55,6 +53,12 @@ extend-select = ["I"]  # Add import sorting
 known-first-party = ["anomaly_detection"]
 force-sort-within-sections = true
 
+[tool.hatch.build.targets.wheel]
+packages = ["anomaly_detection"]
+
+[tool.hatch.build.targets.sdist]
+include = ["anomaly_detection", "README.md", "LICENSE", "pyproject.toml"]
+
 [build-system]
-requires = ["flit_core >=3.2,<4"]
-build-backend = "flit_core.buildapi"
+requires = ["hatchling"]
+build-backend = "hatchling.build"
