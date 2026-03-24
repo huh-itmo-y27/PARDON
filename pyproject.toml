@@ -1,0 +1,60 @@
+[project]
+name = "pumps_anomaly_detection"
+version = "0.0.1"
+description = "A short description of the project."
+authors = [
+  { name = "Roman Kuklo, George Lopatenko" },
+]
+license = { file = "LICENSE" }
+readme = "README.md"
+requires-python = ">=3.10,<3.11"
+
+dependencies = [
+  "awscli",
+  "ipython",
+  "jupyterlab",
+  "loguru",
+  "matplotlib",
+  "mkdocs",
+  "notebook",
+  "numpy",
+  "pandas",
+  "python-dotenv",
+  "scikit-learn",
+  "tqdm",
+  "typer",
+  "arimafd",
+  "tensorflow>=2.15.0,<3.0.0",
+  "sympy>=1.12,<2.0.0",
+  "lightgbm>=4.3.0,<5.0.0",
+  "matplotlib>=3.8.4,<4.0.0",
+  "ipykernel>=6.29.4,<7.0.0",
+  "ipython>=8.24.0,<9.0.0",
+]
+
+[dependency-groups]
+dev = [
+  "pre-commit>=3.7.0,<4.0.0",
+  "ruff>=0.4.2,<0.5.0",
+  "pytest>=8.2.0,<9.0.0",
+]
+
+[tool.uv.sources]
+arimafd = { git = "https://github.com/InSuperposition/arimafd.git", branch = "master" }
+
+
+[tool.ruff]
+line-length = 99
+src = ["anomaly_detection"]
+include = ["pyproject.toml", "anomaly_detection/**/*.py"]
+
+[tool.ruff.lint]
+extend-select = ["I"]  # Add import sorting
+
+[tool.ruff.lint.isort]
+known-first-party = ["anomaly_detection"]
+force-sort-within-sections = true
+
+[build-system]
+requires = ["flit_core >=3.2,<4"]
+build-backend = "flit_core.buildapi"

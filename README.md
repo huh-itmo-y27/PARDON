@@ -1,64 +1,61 @@
-pumps-anomaly-detection
-==============================
+# pumps-anomaly-detection
 
-Anomaly detection in industrial pumping equipment time series.
+<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
+    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
+</a>
 
-Project Organization
-------------
+A short description of the project.
+
+## Project Organization
 
 ```
-itmo-aiii27-mlops/
-├── LICENSE     
-├── README.md                  
-├── Makefile                     # Makefile with commands like `make data` or `make train`                   
-├── configs                      # Config files (models and training hyperparameters)
-│   └── model1.yaml              
+├── LICENSE            <- Open-source license if one is chosen
+├── Makefile           <- Makefile with convenience commands like `make data` or `make train`
+├── README.md          <- The top-level README for developers using this project.
+├── data
+│   ├── external       <- Data from third party sources.
+│   ├── interim        <- Intermediate data that has been transformed.
+│   ├── processed      <- The final, canonical data sets for modeling.
+│   └── raw            <- The original, immutable data dump.
 │
-├── data                         
-│   ├── external                 # Data from third party sources.
-│   ├── interim                  # Intermediate data that has been transformed.
-│   ├── processed                # The final, canonical data sets for modeling.
-│   └── raw                      # The original, immutable data dump.
+├── docs               <- A default mkdocs project; see www.mkdocs.org for details
 │
-├── docs                         # Project documentation.
+├── models             <- Trained and serialized models, model predictions, or model summaries
 │
-├── models                       # Trained and serialized models.
+├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
+│                         the creator's initials, and a short `-` delimited description, e.g.
+│                         `1.0-jqp-initial-data-exploration`.
 │
-├── notebooks                    # Jupyter notebooks.
+├── pyproject.toml     <- Project configuration file with package metadata for 
+│                         anomaly_detection and configuration for tools like black
 │
-├── references                   # Data dictionaries, manuals, and all other explanatory materials.
+├── references         <- Data dictionaries, manuals, and all other explanatory materials.
 │
-├── reports                      # Generated analysis as HTML, PDF, LaTeX, etc.
-│   └── figures                  # Generated graphics and figures to be used in reporting.
+├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
+│   └── figures        <- Generated graphics and figures to be used in reporting
 │
-├── requirements.txt             # The requirements file for reproducing the analysis environment.
-└── src                          # Source code for use in this project.
-    ├── __init__.py              # Makes src a Python module.
+├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
+│                         generated with `pip freeze > requirements.txt`
+│
+├── setup.cfg          <- Configuration file for flake8
+│
+└── anomaly_detection   <- Source code for use in this project.
     │
-    ├── data                     # Data engineering scripts.
-    │   ├── build_features.py    
-    │   ├── cleaning.py          
-    │   ├── ingestion.py         
-    │   ├── labeling.py          
-    │   ├── splitting.py         
-    │   └── validation.py        
+    ├── __init__.py             <- Makes anomaly_detection a Python module
     │
-    ├── models                   # ML model engineering (a folder for each model).
-    │   └── model1      
-    │       ├── dataloader.py    
-    │       ├── hyperparameters_tuning.py 
-    │       ├── model.py         
-    │       ├── predict.py       
-    │       ├── preprocessing.py 
-    │       └── train.py         
+    ├── config.py               <- Store useful variables and configuration
     │
-    └── visualization        # Scripts to create exploratory and results oriented visualizations.
-        ├── evaluation.py        
-        └── exploration.py       
+    ├── dataset.py              <- Scripts to download or generate data
+    │
+    ├── features.py             <- Code to create features for modeling
+    │
+    ├── modeling                
+    │   ├── __init__.py 
+    │   ├── predict.py          <- Code to run model inference with trained models          
+    │   └── train.py            <- Code to train models
+    │
+    └── plots.py                <- Code to create visualizations
 ```
-
 
 --------
-<p><small>Project based on the <a target="_blank" href="https://github.com/Chim-SO/cookiecutter-mlops/">cookiecutter MLOps project template</a>
-that is originally based on <a target="_blank" href="https://drivendata.github.io/cookiecutter-data-science/">cookiecutter data science project template</a>. 
-#cookiecuttermlops #cookiecutterdatascience</small></p>
+
