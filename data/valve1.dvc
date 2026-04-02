@@ -1,0 +1,6 @@
+outs:
+- md5: 1312c7b16788fd2c74f1790587e61a2b.dir
+  size: 1753272
+  nfiles: 16
+  hash: md5
+  path: valve1

@@ -1,0 +1,6 @@
+[core]
+    remote = minio_storage
+['remote "minio_storage"']
+    url = s3://mlops-bucket
+    endpointurl = http://10.146.216.24:9000
+    use_ssl = false
