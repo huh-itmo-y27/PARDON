@@ -189,3 +189,6 @@ cython_debug/
 
 # MLflow runs directory
 mlruns/
+
+# Data raw directory
+data/raw/
