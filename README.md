@@ -64,6 +64,14 @@ Run inference:
 make predict MODEL=isolation_forest
 ```
 
+Open MLflow UI for current `mlruns`:
+
+```bash
+make mlflow_ui
+# optional custom port:
+# make mlflow_ui MLFLOW_PORT=5001
+```
+
 ## MLflow
 
 Training logs parameters, metrics, and model artifacts to MLflow

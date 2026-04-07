@@ -8,6 +8,7 @@ PYTHON_INTERPRETER = uv run python
 UV_HTTP_TIMEOUT ?= 120
 UV_HTTP_RETRIES ?= 3
 MODEL ?= isolation_forest
+MLFLOW_PORT ?= 5000
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -69,6 +70,11 @@ data_pull:
 data_push:
 	dvc push
 	@if [ -d data/raw/valve1 ]; then mv data/raw/valve1 data/valve1; fi
+
+## Run MLflow UI for current local mlruns
+.PHONY: mlflow_ui
+mlflow_ui:
+	uv run mlflow ui --backend-store-uri "file:./mlruns" --port $(MLFLOW_PORT)
 
 
 

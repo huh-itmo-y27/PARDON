@@ -50,7 +50,7 @@ class AnomalyModel(Protocol):
 
     def save(self, path: Path) -> None: ...
 
-    def mlflow_log_model(self, model_artifact_name: str) -> None: ...
+    def mlflow_log_model(self, model_artifact_name: str) -> str: ...
 
     @staticmethod
     def mlflow_load_model(model_uri: str) -> Any: ...
@@ -105,10 +105,13 @@ class IsolationForestModel:
         instance.model = joblib.load(path / "model.joblib")
         return instance
 
-    def mlflow_log_model(self, model_artifact_name: str) -> None:
+    def mlflow_log_model(self, model_artifact_name: str) -> str:
         import mlflow.sklearn
 
-        mlflow.sklearn.log_model(self.model, name=model_artifact_name)
+        model_info = mlflow.sklearn.log_model(
+            self.model, name=model_artifact_name
+        )
+        return model_info.model_uri
 
     @staticmethod
     def mlflow_load_model(model_uri: str) -> Any:
@@ -192,10 +195,13 @@ class ConvAEModel:
         instance.model = keras.models.load_model(path / "model.keras")
         return instance
 
-    def mlflow_log_model(self, model_artifact_name: str) -> None:
+    def mlflow_log_model(self, model_artifact_name: str) -> str:
         import mlflow.tensorflow
 
-        mlflow.tensorflow.log_model(self.model, name=model_artifact_name)
+        model_info = mlflow.tensorflow.log_model(
+            self.model, name=model_artifact_name
+        )
+        return model_info.model_uri
 
     @staticmethod
     def mlflow_load_model(model_uri: str) -> Any:
@@ -282,10 +288,13 @@ class LSTMAEModel:
         instance.model = keras.models.load_model(path / "model.keras")
         return instance
 
-    def mlflow_log_model(self, model_artifact_name: str) -> None:
+    def mlflow_log_model(self, model_artifact_name: str) -> str:
         import mlflow.tensorflow
 
-        mlflow.tensorflow.log_model(self.model, name=model_artifact_name)
+        model_info = mlflow.tensorflow.log_model(
+            self.model, name=model_artifact_name
+        )
+        return model_info.model_uri
 
     @staticmethod
     def mlflow_load_model(model_uri: str) -> Any:

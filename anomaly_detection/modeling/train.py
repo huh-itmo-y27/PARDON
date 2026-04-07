@@ -30,10 +30,17 @@ from anomaly_detection.modeling.models import (
 app = typer.Typer()
 
 
-def load_splits(processed_dir: Path) -> tuple[pd.DataFrame, pd.DataFrame]:
+def load_splits(
+    processed_dir: Path,
+) -> tuple[pd.DataFrame, pd.DataFrame, str]:
     train_df = pd.read_csv(processed_dir / "train_features.csv")
     val_df = pd.read_csv(processed_dir / "val_features.csv")
-    return train_df, val_df
+    test_df = pd.read_csv(processed_dir / "test_features.csv")
+    if int(val_df[LABEL_COL].sum()) > 0:
+        return train_df, val_df, "val"
+    if int(test_df[LABEL_COL].sum()) > 0:
+        return train_df, test_df, "test_fallback"
+    return train_df, val_df, "val_no_positive"
 
 
 def infer_feature_columns(df: pd.DataFrame) -> list[str]:
@@ -62,12 +69,16 @@ def changepoint_flags(flags: np.ndarray) -> np.ndarray:
 def compute_nab_metrics(
     cp_true: np.ndarray, cp_pred: np.ndarray, datetime_series: pd.Series
 ) -> dict[str, float]:
+    if int(cp_true.sum()) == 0:
+        raise ValueError(
+            "No true changepoints in evaluation split, NAB is undefined"
+        )
     index = pd.to_datetime(datetime_series, errors="coerce")
     if index.isna().any():
         raise ValueError("Invalid datetime values for NAB calculation")
 
-    y_true_cp = pd.Series(cp_true.astype(int), index=index)
-    y_pred_cp = pd.Series(cp_pred.astype(int), index=index)
+    y_true_cp = pd.Series(cp_true.astype(int), index=index).sort_index()
+    y_pred_cp = pd.Series(cp_pred.astype(int), index=index).sort_index()
     results = chp_score(
         y_true_cp,
         y_pred_cp,
@@ -133,13 +144,13 @@ def main(
     verbose: int = 0,
 ) -> None:
     np.random.seed(seed)
-    train_df, val_df = load_splits(processed_dir)
+    train_df, eval_df, eval_split_name = load_splits(processed_dir)
     feature_cols = infer_feature_columns(train_df)
 
     x_train = train_df[feature_cols].to_numpy(dtype=float)
-    x_val = val_df[feature_cols].to_numpy(dtype=float)
-    y_val = val_df[LABEL_COL].to_numpy(dtype=int)
-    cp_val = val_df["changepoint"].to_numpy(dtype=int)
+    x_eval = eval_df[feature_cols].to_numpy(dtype=float)
+    y_eval = eval_df[LABEL_COL].to_numpy(dtype=int)
+    cp_eval = eval_df["changepoint"].to_numpy(dtype=int)
 
     model = build_model(
         model_name,
@@ -167,19 +178,19 @@ def main(
 
     model.fit_points(x_train)
     train_scores = model.score_points(x_train)
-    val_scores = model.score_points(x_val)
+    eval_scores = model.score_points(x_eval)
 
     threshold = float(np.quantile(train_scores, threshold_quantile))
-    val_pred = (val_scores > threshold).astype(int)
-    point_metrics = compute_classification_metrics(y_val, val_pred)
-    cp_pred = changepoint_flags(val_pred)
-    cp_metrics = compute_classification_metrics(cp_val, cp_pred)
+    eval_pred = (eval_scores > threshold).astype(int)
+    point_metrics = compute_classification_metrics(y_eval, eval_pred)
+    cp_pred = changepoint_flags(eval_pred)
+    cp_metrics = compute_classification_metrics(cp_eval, cp_pred)
     nab_metrics: dict[str, float] = {}
     try:
         nab_metrics = compute_nab_metrics(
-            cp_true=cp_val,
+            cp_true=cp_eval,
             cp_pred=cp_pred,
-            datetime_series=val_df["datetime"],
+            datetime_series=eval_df["datetime"],
         )
     except Exception as exc:
         logger.warning("NAB metrics were not computed: {}", exc)
@@ -193,6 +204,7 @@ def main(
         "threshold_quantile": threshold_quantile,
         "time_steps": time_steps,
         "seed": seed,
+        "evaluation_split": eval_split_name,
         "metrics_point": point_metrics,
         "metrics_changepoint": cp_metrics,
         "metrics_nab": nab_metrics,
@@ -225,6 +237,7 @@ def main(
                     "epochs": epochs,
                     "batch_size": batch_size,
                     "learning_rate": learning_rate,
+                    "evaluation_split": eval_split_name,
                 }
             )
             metrics_payload = {
@@ -247,10 +260,9 @@ def main(
             mlflow.log_metrics(metrics_payload)
             mlflow.log_artifact(str(model_dir / "train_metadata.json"))
 
-            model.mlflow_log_model(model_artifact_name="model")
+            model_uri = model.mlflow_log_model(model_artifact_name="model")
 
             if register_model:
-                model_uri = f"runs:/{mlflow.active_run().info.run_id}/model"
                 reg_name = f"{MLFLOW_REGISTERED_MODEL_PREFIX}_{model_name}"
                 try:
                     result = mlflow.register_model(
