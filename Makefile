@@ -7,6 +7,7 @@ PYTHON_VERSION = 3.10
 PYTHON_INTERPRETER = uv run python
 UV_HTTP_TIMEOUT ?= 120
 UV_HTTP_RETRIES ?= 3
+MODEL ?= isolation_forest
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -46,19 +47,22 @@ format:
 .PHONY: test
 test:
 	uv run pytest tests
-## Download Data from storage system
-.PHONY: sync_data_down
-sync_data_down:
-	aws s3 sync s3://pumps-anomaly-detection/data/ \
-		data/ 
-	
+## Configure DVC remote credentials (local config only)
+.PHONY: setup_dvc
+setup_dvc:
+	dvc remote modify --local minio_storage access_key_id "$(AWS_ACCESS_KEY_ID)"
+	dvc remote modify --local minio_storage secret_access_key "$(AWS_SECRET_ACCESS_KEY)"
 
-## Upload Data to storage system
-.PHONY: sync_data_up
-sync_data_up:
-	aws s3 sync data/ \
-		s3://pumps-anomaly-detection/data 
-	
+## Download versioned data from DVC remote
+.PHONY: data_pull
+data_pull:
+	dvc pull
+
+## Upload versioned data to DVC remote
+.PHONY: data_push
+data_push:
+	dvc push
+
 
 
 
@@ -83,6 +87,26 @@ create_environment:
 .PHONY: data
 data: requirements
 	$(PYTHON_INTERPRETER) anomaly_detection/dataset.py
+
+## Prepare canonical split files from raw data
+.PHONY: dataset
+dataset: requirements
+	$(PYTHON_INTERPRETER) -m anomaly_detection.dataset main
+
+## Generate scaled features for train/val/test
+.PHONY: features
+features: requirements dataset
+	$(PYTHON_INTERPRETER) -m anomaly_detection.features main
+
+## Train selected model pipeline
+.PHONY: train
+train: requirements features
+	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.train main --model-name $(MODEL)
+
+## Run inference with selected model pipeline
+.PHONY: predict
+predict: requirements features
+	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.predict main --model-name $(MODEL)
 
 
 #################################################################################
