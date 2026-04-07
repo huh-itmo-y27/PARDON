@@ -50,7 +50,7 @@ class AnomalyModel(Protocol):
 
     def save(self, path: Path) -> None: ...
 
-    def mlflow_log_model(self, artifact_path: str) -> None: ...
+    def mlflow_log_model(self, model_artifact_name: str) -> None: ...
 
     @staticmethod
     def mlflow_load_model(model_uri: str) -> Any: ...
@@ -105,10 +105,10 @@ class IsolationForestModel:
         instance.model = joblib.load(path / "model.joblib")
         return instance
 
-    def mlflow_log_model(self, artifact_path: str) -> None:
+    def mlflow_log_model(self, model_artifact_name: str) -> None:
         import mlflow.sklearn
 
-        mlflow.sklearn.log_model(self.model, artifact_path=artifact_path)
+        mlflow.sklearn.log_model(self.model, name=model_artifact_name)
 
     @staticmethod
     def mlflow_load_model(model_uri: str) -> Any:
@@ -192,10 +192,10 @@ class ConvAEModel:
         instance.model = keras.models.load_model(path / "model.keras")
         return instance
 
-    def mlflow_log_model(self, artifact_path: str) -> None:
+    def mlflow_log_model(self, model_artifact_name: str) -> None:
         import mlflow.tensorflow
 
-        mlflow.tensorflow.log_model(self.model, artifact_path=artifact_path)
+        mlflow.tensorflow.log_model(self.model, name=model_artifact_name)
 
     @staticmethod
     def mlflow_load_model(model_uri: str) -> Any:
@@ -282,10 +282,10 @@ class LSTMAEModel:
         instance.model = keras.models.load_model(path / "model.keras")
         return instance
 
-    def mlflow_log_model(self, artifact_path: str) -> None:
+    def mlflow_log_model(self, model_artifact_name: str) -> None:
         import mlflow.tensorflow
 
-        mlflow.tensorflow.log_model(self.model, artifact_path=artifact_path)
+        mlflow.tensorflow.log_model(self.model, name=model_artifact_name)
 
     @staticmethod
     def mlflow_load_model(model_uri: str) -> Any:
