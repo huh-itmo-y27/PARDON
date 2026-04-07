@@ -1,9 +1,9 @@
 import json
 from pathlib import Path
 
+from loguru import logger
 import pandas as pd
 import typer
-from loguru import logger
 
 from anomaly_detection.config import (
     CHANGEPOINT_COL,
@@ -112,7 +112,9 @@ def main(
     train_all.to_csv(output_dir / "train.csv", index=False)
     val_all.to_csv(output_dir / "val.csv", index=False)
     test_all.to_csv(output_dir / "test.csv", index=False)
-    with (output_dir / "dataset_manifest.json").open("w", encoding="utf-8") as f:
+    with (output_dir / "dataset_manifest.json").open(
+        "w", encoding="utf-8"
+    ) as f:
         json.dump(manifest, f, indent=2, ensure_ascii=True)
 
     logger.success(

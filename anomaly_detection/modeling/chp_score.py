@@ -63,10 +63,7 @@ def single_detecting_boundaries(
 
     new_detecting_boundaries = detecting_boundaries.copy()
     for i in range(len(new_detecting_boundaries) - 1):
-        if (
-            new_detecting_boundaries[i][1]
-            >= new_detecting_boundaries[i + 1][0]
-        ):
+        if new_detecting_boundaries[i][1] >= new_detecting_boundaries[i + 1][0]:
             if intersection_mode == "cut left window":
                 new_detecting_boundaries[i][1] = new_detecting_boundaries[
                     i + 1
@@ -104,7 +101,9 @@ def check_errors(my_list):
         nonlocal level_list
 
         if check_error(items):
-            raise Exception(f"Non uniform data format in level {level}: {items}")
+            raise Exception(
+                f"Non uniform data format in level {level}: {items}"
+            )
 
         if level not in level_list.keys():
             level_list[level] = []
@@ -125,7 +124,9 @@ def check_errors(my_list):
     if 3 in level_list:
         for el in level_list[2]:
             if not ((len(el) == 2) or (len(el) == 0)):
-                raise Exception(f"Non uniform data format in level {2}: {my_list}")
+                raise Exception(
+                    f"Non uniform data format in level {2}: {my_list}"
+                )
     return mx
 
 
@@ -143,7 +144,9 @@ def extract_cp_confusion_matrix(
     my_dict = {"TPs": {}, "FPs": [], "FNs": []}
 
     if len(detecting_boundaries) != 0:
-        my_dict["FPs"].append(times_pred[times_pred < detecting_boundaries[0][0]])
+        my_dict["FPs"].append(
+            times_pred[times_pred < detecting_boundaries[0][0]]
+        )
         for i in range(len(detecting_boundaries)):
             times_pred_window = times_pred[
                 (times_pred >= detecting_boundaries[i][0])
@@ -160,7 +163,9 @@ def extract_cp_confusion_matrix(
             else:
                 my_dict["TPs"][i] = [
                     detecting_boundaries[i][0],
-                    times_pred_window[point] if not binary else times_pred_window,
+                    times_pred_window[point]
+                    if not binary
+                    else times_pred_window,
                     detecting_boundaries[i][1],
                 ]
                 if binary:
@@ -177,7 +182,9 @@ def extract_cp_confusion_matrix(
                     ]
                 )
 
-        my_dict["FPs"].append(times_pred[times_pred > detecting_boundaries[i][1]])
+        my_dict["FPs"].append(
+            times_pred[times_pred > detecting_boundaries[i][1]]
+        )
     else:
         my_dict["FPs"].append(times_pred)
 
@@ -253,7 +260,9 @@ def single_average_delay(
         raise Exception("Choose anomaly_window_destination")
 
     for fp_case_window in dict_cp_confusion["TPs"]:
-        detectHistory.append(average_time(dict_cp_confusion["TPs"][fp_case_window]))
+        detectHistory.append(
+            average_time(dict_cp_confusion["TPs"][fp_case_window])
+        )
     return missing, detectHistory, FP, all_true_anom
 
 
@@ -269,11 +278,7 @@ def my_scale(
     x = np.linspace(-np.pi / 2, np.pi / 2, detalization)
     x = x if clear_anomalies_mode else x[::-1]
     y = (
-        (A_tp - A_fp)
-        / 2
-        * -1
-        * np.tanh(koef * x)
-        / (np.tanh(np.pi * koef / 2))
+        (A_tp - A_fp) / 2 * -1 * np.tanh(koef * x) / (np.tanh(np.pi * koef / 2))
         + (A_tp - A_fp) / 2
         + A_fp
     )
@@ -444,7 +449,9 @@ def chp_score(
                 prediction[i].plot(
                     ax=globals()["ax" + str(i)], label="pred", marker="o"
                 )
-                true[i].plot(ax=globals()["ax" + str(i)], label="true", marker="o")
+                true[i].plot(
+                    ax=globals()["ax" + str(i)], label="true", marker="o"
+                )
                 globals()["ax" + str(i)].legend()
             plt.show()
         else:
@@ -479,7 +486,9 @@ def chp_score(
                             else None,
                         )
                         nab = pd.Series(
-                            my_scale(plot_figure=True, detalization=detalization),
+                            my_scale(
+                                plot_figure=True, detalization=detalization
+                            ),
                             index=pd.date_range(
                                 couple[0], couple[1], periods=detalization
                             ),
@@ -536,11 +545,13 @@ def chp_score(
     elif metric == "average_time":
         missing, detect_history, fp, all_true_anom = 0, [], 0, 0
         for i in range(len(prediction)):
-            missing_, detect_history_, fp_, all_true_anom_ = single_average_delay(
-                detecting_boundaries[i],
-                prediction[i],
-                anomaly_window_destination=anomaly_window_destination,
-                clear_anomalies_mode=clear_anomalies_mode,
+            missing_, detect_history_, fp_, all_true_anom_ = (
+                single_average_delay(
+                    detecting_boundaries[i],
+                    prediction[i],
+                    anomaly_window_destination=anomaly_window_destination,
+                    clear_anomalies_mode=clear_anomalies_mode,
+                )
             )
             missing += missing_
             detect_history += detect_history_

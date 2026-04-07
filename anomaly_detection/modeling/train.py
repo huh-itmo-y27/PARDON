@@ -1,14 +1,14 @@
 from __future__ import annotations
 
-import json
 from datetime import datetime, timezone
+import json
 from pathlib import Path
 
+from loguru import logger
 import numpy as np
 import pandas as pd
-import typer
-from loguru import logger
 from sklearn.metrics import f1_score, precision_score, recall_score
+import typer
 
 from anomaly_detection.config import (
     DEFAULT_MODEL_NAME,
@@ -52,9 +52,7 @@ def compute_classification_metrics(
     y_true: np.ndarray, y_pred: np.ndarray
 ) -> dict[str, float]:
     return {
-        "precision": float(
-            precision_score(y_true, y_pred, zero_division=0)
-        ),
+        "precision": float(precision_score(y_true, y_pred, zero_division=0)),
         "recall": float(recall_score(y_true, y_pred, zero_division=0)),
         "f1": float(f1_score(y_true, y_pred, zero_division=0)),
     }
@@ -275,9 +273,7 @@ def main(
                         version=result.version,
                     )
                     mlflow.log_param("registered_model_name", reg_name)
-                    mlflow.log_param(
-                        "registered_model_version", result.version
-                    )
+                    mlflow.log_param("registered_model_version", result.version)
                     mlflow.log_param("registered_model_alias", "champion")
                 except Exception as exc:  # pragma: no cover
                     logger.warning(

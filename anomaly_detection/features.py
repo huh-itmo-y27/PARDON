@@ -2,10 +2,10 @@ import json
 from pathlib import Path
 
 import joblib
-import pandas as pd
-import typer
 from loguru import logger
+import pandas as pd
 from sklearn.preprocessing import StandardScaler
+import typer
 
 from anomaly_detection.config import (
     CHANGEPOINT_COL,

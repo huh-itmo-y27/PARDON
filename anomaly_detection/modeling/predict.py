@@ -3,9 +3,9 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
+from loguru import logger
 import pandas as pd
 import typer
-from loguru import logger
 
 from anomaly_detection.config import (
     DEFAULT_MODEL_NAME,
@@ -42,7 +42,9 @@ def main(
     x_test = test_df[feature_cols].to_numpy(dtype=float)
 
     model_dir = models_dir / model_name
-    metadata = json.loads((model_dir / "train_metadata.json").read_text("utf-8"))
+    metadata = json.loads(
+        (model_dir / "train_metadata.json").read_text("utf-8")
+    )
     threshold = float(metadata["threshold"])
     time_steps = int(metadata["time_steps"])
     model_cls = get_model_class(model_name)
@@ -51,9 +53,7 @@ def main(
         try:
             import mlflow
         except ModuleNotFoundError as exc:  # pragma: no cover
-            raise RuntimeError(
-                "mlflow is required for source=mlflow."
-            ) from exc
+            raise RuntimeError("mlflow is required for source=mlflow.") from exc
         mlflow.set_tracking_uri(tracking_uri)
         if not model_uri:
             raise ValueError("Pass --model-uri when source=mlflow")
@@ -95,7 +95,9 @@ def main(
                     "rows": len(out_df),
                 }
             )
-            mlflow.log_metric("anomaly_rate", float(out_df["anomaly_flag"].mean()))
+            mlflow.log_metric(
+                "anomaly_rate", float(out_df["anomaly_flag"].mean())
+            )
             mlflow.log_metric("avg_score", float(out_df["score"].mean()))
             mlflow.log_artifact(str(output_path))
 
