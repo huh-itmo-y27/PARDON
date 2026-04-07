@@ -21,6 +21,25 @@ MODELS_DIR = PROJ_ROOT / "models"
 REPORTS_DIR = PROJ_ROOT / "reports"
 FIGURES_DIR = REPORTS_DIR / "figures"
 
+# Data contract defaults
+TIMESTAMP_COL = "datetime"
+LABEL_COL = "anomaly"
+CHANGEPOINT_COL = "changepoint"
+CSV_SEPARATOR = ";"
+TRAIN_SIZE = 400
+VAL_SIZE = 100
+RANDOM_SEED = 0
+
+# Model defaults
+DEFAULT_MODEL_NAME = "isolation_forest"
+DEFAULT_TIME_STEPS = 60
+DEFAULT_THRESHOLD_QUANTILE = 0.99
+
+# MLflow defaults
+MLFLOW_TRACKING_URI = "file:./mlruns"
+MLFLOW_EXPERIMENT_NAME = "anomaly_detection"
+MLFLOW_REGISTERED_MODEL_PREFIX = "anomaly_detection"
+
 # If tqdm is installed, configure loguru with tqdm.write
 # https://github.com/Delgan/loguru/issues/135
 try:

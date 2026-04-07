@@ -49,7 +49,9 @@ class PlotResult:
 def _get_axis(new_figure, title=None, figsize=None):
     global _LAST_AX
     if new_figure or _LAST_AX is None:
-        _, ax = plt.subplots(figsize=figsize or _DEFAULT_FIGSIZE, layout="constrained")
+        _, ax = plt.subplots(
+            figsize=figsize or _DEFAULT_FIGSIZE, layout="constrained"
+        )
         _LAST_AX = ax
     ax = _LAST_AX
     if title is not None:
@@ -59,22 +61,43 @@ def _get_axis(new_figure, title=None, figsize=None):
 
 def fast_bar(data, figsize=None, title="", alpha=1, label="", new_figure=True):
     with plt.style.context(_PLOT_STYLE):
-        ax = _get_axis(new_figure=new_figure, title=title or None, figsize=figsize)
+        ax = _get_axis(
+            new_figure=new_figure, title=title or None, figsize=figsize
+        )
         ax.bar(data.index, data.values, alpha=alpha, label=label or "value")
     return PlotResult(ax.figure)
 
 
-def fast_hist(data, n=30, ax=None, figsize=None, title="", alpha=1, label="", new_figure=True):
+def fast_hist(
+    data,
+    n=30,
+    ax=None,
+    figsize=None,
+    title="",
+    alpha=1,
+    label="",
+    new_figure=True,
+):
     with plt.style.context(_PLOT_STYLE):
         if ax is None:
-            ax = _get_axis(new_figure=new_figure, title=title or None, figsize=figsize)
+            ax = _get_axis(
+                new_figure=new_figure, title=title or None, figsize=figsize
+            )
         elif title:
             ax.set_title(title)
         ax.hist(data, bins=n, alpha=alpha, label=label or "value")
     return PlotResult(ax.figure)
 
 
-def fast_plot(data, rolling=1, alpha=0.5, figsize=None, new_figure=True, title=None, label=None):
+def fast_plot(
+    data,
+    rolling=1,
+    alpha=0.5,
+    figsize=None,
+    new_figure=True,
+    title=None,
+    label=None,
+):
     smoothed = data.rolling(rolling).mean()
     with plt.style.context(_PLOT_STYLE):
         ax = _get_axis(new_figure=new_figure, title=title, figsize=figsize)
@@ -84,17 +107,29 @@ def fast_plot(data, rolling=1, alpha=0.5, figsize=None, new_figure=True, title=N
             marker="o",
             linewidth=2,
             alpha=alpha,
-            label=label or (data.name if getattr(data, "name", None) else "series"),
+            label=label
+            or (data.name if getattr(data, "name", None) else "series"),
         )
     return PlotResult(ax.figure)
 
 
-def fast_scatter(x, y, rolling=1, alpha=0.5, figsize=None, new_figure=True, title=None, label=None):
+def fast_scatter(
+    x,
+    y,
+    rolling=1,
+    alpha=0.5,
+    figsize=None,
+    new_figure=True,
+    title=None,
+    label=None,
+):
     x_smoothed = x.rolling(rolling).mean()
     y_smoothed = y.rolling(rolling).mean()
     with plt.style.context(_PLOT_STYLE):
         ax = _get_axis(new_figure=new_figure, title=title, figsize=figsize)
-        ax.scatter(x_smoothed, y_smoothed, alpha=alpha, label=label or "scatter")
+        ax.scatter(
+            x_smoothed, y_smoothed, alpha=alpha, label=label or "scatter"
+        )
     return PlotResult(ax.figure)
 
 
