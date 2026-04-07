@@ -193,5 +193,23 @@ mlruns/
 # Data raw directory
 data/raw/
 
+# Data processed directory
+data/processed/
+
+# Data interim directory
+data/interim/
+
+# Data external directory
+data/external/
+
+# Models directory
+models/
+
+# Reports directory
+reports/
+
+# Figures directory
+figures/
+
 # SKAB directory
 SKAB/

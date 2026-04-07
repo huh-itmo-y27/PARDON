@@ -61,11 +61,14 @@ setup_dvc:
 .PHONY: data_pull
 data_pull:
 	dvc pull
+	mkdir -p data/raw
+	@if [ -d data/valve1 ]; then mv data/valve1 data/raw/; fi
 
 ## Upload versioned data to DVC remote
 .PHONY: data_push
 data_push:
 	dvc push
+	@if [ -d data/raw/valve1 ]; then mv data/raw/valve1 data/valve1; fi
 
 
 
@@ -95,22 +98,22 @@ data: requirements
 ## Prepare canonical split files from raw data
 .PHONY: dataset
 dataset: requirements
-	$(PYTHON_INTERPRETER) -m anomaly_detection.dataset main
+	$(PYTHON_INTERPRETER) -m anomaly_detection.dataset
 
 ## Generate scaled features for train/val/test
 .PHONY: features
 features: requirements dataset
-	$(PYTHON_INTERPRETER) -m anomaly_detection.features main
+	$(PYTHON_INTERPRETER) -m anomaly_detection.features
 
 ## Train selected model pipeline
 .PHONY: train
 train: requirements features
-	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.train main --model-name $(MODEL)
+	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.train --model-name $(MODEL)
 
 ## Run inference with selected model pipeline
 .PHONY: predict
 predict: requirements features
-	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.predict main --model-name $(MODEL)
+	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.predict --model-name $(MODEL)
 
 
 #################################################################################
