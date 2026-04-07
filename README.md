@@ -32,11 +32,10 @@ Install dependencies:
 make requirements
 ```
 
-Configure DVC credentials and pull versioned data:
+Configure DVC credentials from `.env` and pull versioned data:
 
 ```bash
-export AWS_ACCESS_KEY_ID=<your_key>
-export AWS_SECRET_ACCESS_KEY=<your_secret>
+# Set MINIO_ACCESS_KEY and MINIO_SECRET_KEY in .env first
 make setup_dvc
 make data_pull
 ```

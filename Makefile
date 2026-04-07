@@ -50,8 +50,12 @@ test:
 ## Configure DVC remote credentials (local config only)
 .PHONY: setup_dvc
 setup_dvc:
-	dvc remote modify --local minio_storage access_key_id "$(AWS_ACCESS_KEY_ID)"
-	dvc remote modify --local minio_storage secret_access_key "$(AWS_SECRET_ACCESS_KEY)"
+	@set -a; \
+	. ./.env; \
+	set +a; \
+	uv run dvc remote modify --local minio_storage access_key_id "$$MINIO_ACCESS_KEY"; \
+	uv run dvc remote modify --local minio_storage secret_access_key "$$MINIO_SECRET_KEY"; \
+	echo "DVC configured"
 
 ## Download versioned data from DVC remote
 .PHONY: data_pull
