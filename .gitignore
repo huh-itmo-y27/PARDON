@@ -191,7 +191,8 @@ cython_debug/
 mlruns/
 
 # Data raw directory
-data/raw/
+data/raw/**
+!data/raw/**/*.dvc
 
 # Data processed directory
 data/processed/
