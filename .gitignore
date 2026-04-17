@@ -192,7 +192,6 @@ mlruns/
 
 # Data raw directory
 data/raw/*
-!data/raw/*.dvc
 
 # Data processed directory
 data/processed/
