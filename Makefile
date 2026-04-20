@@ -123,26 +123,32 @@ predict: requirements features
 # DOCKER                                                                        #
 #################################################################################
 
+## Build Docker images from docker-compose.yml
 .PHONY: docker_build
 docker_build:
 	docker compose build
 
+## Open interactive bash shell in app container
 .PHONY: docker_run
 docker_run:
 	docker compose run --rm app bash
 
+## Train selected model inside Docker (MODEL=isolation_forest|conv_ae|lstm_ae)
 .PHONY: train_docker
 train_docker:
 	docker compose run --rm app make train
 
+## Run inference inside Docker (MODEL=isolation_forest|conv_ae|lstm_ae)
 .PHONY: predict_docker
 predict_docker:
 	docker compose run --rm app make predict
 
+## Run tests inside Docker
 .PHONY: test_docker
 test_docker:
 	docker compose run --rm app make test
 
+## Run lint checks inside Docker
 .PHONY: lint_docker
 lint_docker:
 	docker compose run --rm app make lint
