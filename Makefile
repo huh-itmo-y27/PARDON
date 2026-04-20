@@ -58,18 +58,16 @@ setup_dvc:
 	uv run dvc remote modify --local minio_storage secret_access_key "$$MINIO_SECRET_KEY"; \
 	echo "DVC configured"
 
-## Download versioned data from DVC remote
+## Download versioned data and models from DVC remote
 .PHONY: data_pull
 data_pull:
-	dvc pull
-	mkdir -p data/raw
-	@if [ -d data/valve1 ]; then mv data/valve1 data/raw/; fi
+	dvc pull data/valve1.dvc models/models.dvc
 
 ## Upload versioned data to DVC remote
+# TODO: delete move
 .PHONY: data_push
 data_push:
 	dvc push
-	@if [ -d data/raw/valve1 ]; then mv data/raw/valve1 data/valve1; fi
 
 ## Run MLflow UI for current local mlruns
 .PHONY: mlflow_ui
