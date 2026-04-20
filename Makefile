@@ -119,6 +119,34 @@ train: requirements features
 predict: requirements features
 	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.predict --model-name $(MODEL)
 
+#################################################################################
+# DOCKER                                                                        #
+#################################################################################
+
+.PHONY: docker_build
+docker_build:
+	docker compose build
+
+.PHONY: docker_run
+docker_run:
+	docker compose run --rm app bash
+
+.PHONY: train_docker
+train_docker:
+	docker compose run --rm app make train
+
+.PHONY: predict_docker
+predict_docker:
+	docker compose run --rm app make predict
+
+.PHONY: test_docker
+test_docker:
+	docker compose run --rm app make test
+
+.PHONY: lint_docker
+lint_docker:
+	docker compose run --rm app make lint
+
 
 #################################################################################
 # Self Documenting Commands                                                     #
