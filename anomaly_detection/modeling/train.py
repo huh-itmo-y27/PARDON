@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import time
 
 from loguru import logger
 import numpy as np
@@ -19,13 +20,24 @@ from anomaly_detection.config import (
     MLFLOW_REGISTERED_MODEL_PREFIX,
     MLFLOW_TRACKING_URI,
     MODELS_DIR,
+    MONITORING_ENABLED,
     PROCESSED_DATA_DIR,
+    PROMETHEUS_GROUPING_ENV,
+    PROMETHEUS_GROUPING_SERVICE,
+    PROMETHEUS_PUSHGATEWAY_URL,
     RANDOM_SEED,
 )
 from anomaly_detection.modeling.chp_score import chp_score
 from anomaly_detection.modeling.models import (
     build_model,
 )
+from anomaly_detection.monitoring.drift import (
+    build_reference_profile,
+    compute_concept_proxy,
+    compute_data_drift,
+    compute_target_drift,
+)
+from anomaly_detection.monitoring.metrics import MonitoringEmitter
 
 app = typer.Typer()
 
@@ -140,10 +152,23 @@ def main(
     batch_size: int = 32,
     learning_rate: float = 1e-3,
     verbose: int = 0,
+    dataset_scenario: str = "unknown",
 ) -> None:
+    run_started_at = time.perf_counter()
     np.random.seed(seed)
     train_df, eval_df, eval_split_name = load_splits(processed_dir)
     feature_cols = infer_feature_columns(train_df)
+    emitter = MonitoringEmitter(
+        job_name="anomaly_train",
+        enabled=MONITORING_ENABLED,
+        pushgateway_url=PROMETHEUS_PUSHGATEWAY_URL,
+        grouping_key={
+            "environment": PROMETHEUS_GROUPING_ENV,
+            "service": PROMETHEUS_GROUPING_SERVICE,
+            "model_name": model_name,
+            "dataset_scenario": dataset_scenario,
+        },
+    )
 
     x_train = train_df[feature_cols].to_numpy(dtype=float)
     x_eval = eval_df[feature_cols].to_numpy(dtype=float)
@@ -195,6 +220,26 @@ def main(
 
     model_dir = output_dir / model_name
     model.save(model_dir)
+    label_cols = [LABEL_COL, "changepoint"]
+    drift_reference = build_reference_profile(
+        train_df, feature_cols, label_cols
+    )
+    data_drift = compute_data_drift(eval_df[feature_cols], drift_reference)
+    target_drift = compute_target_drift(
+        eval_df[label_cols], drift_reference["label_rates"]
+    )
+    concept_drift = compute_concept_proxy(
+        current_metrics={
+            "f1": point_metrics["f1"],
+            "cp_f1": cp_metrics["f1"],
+            "anomaly_rate": float(eval_pred.mean()),
+        },
+        baseline_metrics={
+            "f1": point_metrics["f1"],
+            "cp_f1": cp_metrics["f1"],
+            "anomaly_rate": float(train_df[LABEL_COL].mean()),
+        },
+    )
     train_meta = {
         "model_name": model_name,
         "feature_columns": feature_cols,
@@ -206,11 +251,106 @@ def main(
         "metrics_point": point_metrics,
         "metrics_changepoint": cp_metrics,
         "metrics_nab": nab_metrics,
+        "dataset_scenario": dataset_scenario,
+        "drift_reference": drift_reference,
+        "drift_eval": {
+            "data_drift": data_drift,
+            "target_drift": target_drift,
+            "concept_drift_proxy": concept_drift,
+        },
     }
     (model_dir / "train_metadata.json").write_text(
         json.dumps(train_meta, indent=2),
         encoding="utf-8",
     )
+    (model_dir / "drift_reference.json").write_text(
+        json.dumps(drift_reference, indent=2),
+        encoding="utf-8",
+    )
+    drift_report = {
+        "phase": "train_eval",
+        "data_drift": data_drift,
+        "target_drift": target_drift,
+        "concept_drift_proxy": concept_drift,
+    }
+    (model_dir / "drift_report.json").write_text(
+        json.dumps(drift_report, indent=2),
+        encoding="utf-8",
+    )
+
+    emitter.gauge(
+        "anomaly_pipeline_rows_total",
+        "Processed rows in train job.",
+        float(len(train_df) + len(eval_df)),
+    )
+    emitter.gauge(
+        "anomaly_pipeline_anomaly_rate",
+        "Observed anomaly rate in evaluation split.",
+        float(eval_pred.mean()),
+    )
+    emitter.gauge(
+        "anomaly_pipeline_val_f1", "Validation F1 score.", point_metrics["f1"]
+    )
+    emitter.gauge(
+        "anomaly_pipeline_val_precision",
+        "Validation precision score.",
+        point_metrics["precision"],
+    )
+    emitter.gauge(
+        "anomaly_pipeline_val_recall",
+        "Validation recall score.",
+        point_metrics["recall"],
+    )
+    emitter.gauge(
+        "anomaly_pipeline_val_cp_f1",
+        "Validation changepoint F1 score.",
+        cp_metrics["f1"],
+    )
+    emitter.gauge(
+        "anomaly_pipeline_val_cp_precision",
+        "Validation changepoint precision score.",
+        cp_metrics["precision"],
+    )
+    emitter.gauge(
+        "anomaly_pipeline_val_cp_recall",
+        "Validation changepoint recall score.",
+        cp_metrics["recall"],
+    )
+    if nab_metrics:
+        emitter.gauge(
+            "anomaly_pipeline_val_nab_standard",
+            "Validation NAB Standard score.",
+            nab_metrics["standard"],
+        )
+        emitter.gauge(
+            "anomaly_pipeline_val_nab_low_fp",
+            "Validation NAB LowFP score.",
+            nab_metrics["low_fp"],
+        )
+        emitter.gauge(
+            "anomaly_pipeline_val_nab_low_fn",
+            "Validation NAB LowFN score.",
+            nab_metrics["low_fn"],
+        )
+    emitter.gauge(
+        "anomaly_pipeline_data_drift_score",
+        "Aggregate data drift score.",
+        float(data_drift["data_drift_score"]),
+    )
+    emitter.gauge(
+        "anomaly_pipeline_target_drift_score",
+        "Aggregate target drift score.",
+        float(target_drift["target_drift_score"]),
+    )
+    emitter.gauge(
+        "anomaly_pipeline_concept_drift_score",
+        "Concept drift proxy score.",
+        float(concept_drift["concept_drift_proxy_score"]),
+    )
+    emitter.gauge("anomaly_pipeline_run_success", "Run success marker.", 1.0)
+    emitter.observe_runtime()
+    emitter.flush()
+    train_duration_seconds = time.perf_counter() - run_started_at
 
     if log_to_mlflow:
         try:
@@ -236,6 +376,7 @@ def main(
                     "batch_size": batch_size,
                     "learning_rate": learning_rate,
                     "evaluation_split": eval_split_name,
+                    "dataset_scenario": dataset_scenario,
                 }
             )
             metrics_payload = {
@@ -246,6 +387,7 @@ def main(
                 "val_cp_recall": cp_metrics["recall"],
                 "val_cp_f1": cp_metrics["f1"],
                 "threshold": threshold,
+                "train_duration_seconds": float(train_duration_seconds),
             }
             if nab_metrics:
                 metrics_payload.update(
@@ -255,8 +397,23 @@ def main(
                         "val_nab_low_fn": nab_metrics["low_fn"],
                     }
                 )
+            metrics_payload.update(
+                {
+                    "train_data_drift_score": float(
+                        data_drift["data_drift_score"]
+                    ),
+                    "train_target_drift_score": float(
+                        target_drift["target_drift_score"]
+                    ),
+                    "train_concept_drift_proxy_score": float(
+                        concept_drift["concept_drift_proxy_score"]
+                    ),
+                }
+            )
             mlflow.log_metrics(metrics_payload)
             mlflow.log_artifact(str(model_dir / "train_metadata.json"))
+            mlflow.log_artifact(str(model_dir / "drift_reference.json"))
+            mlflow.log_artifact(str(model_dir / "drift_report.json"))
 
             model_uri = model.mlflow_log_model(model_artifact_name="model")
 

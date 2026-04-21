@@ -75,9 +75,16 @@ def main(
     output_dir: Path = PROCESSED_DATA_DIR,
     train_size: int = TRAIN_SIZE,
     val_size: int = VAL_SIZE,
+    scenario: str = "all",
 ) -> None:
     output_dir.mkdir(parents=True, exist_ok=True)
     files = discover_csv_files(input_dir)
+    if scenario != "all":
+        files = [
+            file_path
+            for file_path in files
+            if scenario.lower() in str(file_path).lower()
+        ]
     if not files:
         raise FileNotFoundError(
             f"No CSV files found in {input_dir}. "
@@ -100,6 +107,8 @@ def main(
             "rows_train": len(train_df),
             "rows_val": len(val_df),
             "rows_test": len(test_df),
+            "anomaly_rate": float(df[LABEL_COL].mean()),
+            "changepoint_rate": float(df[CHANGEPOINT_COL].mean()),
         }
         train_parts.append(train_df)
         val_parts.append(val_df)
@@ -124,6 +133,7 @@ def main(
         len(test_all),
         len(files),
     )
+    logger.info("Scenario filter used: {}", scenario)
 
 
 if __name__ == "__main__":

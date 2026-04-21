@@ -1,0 +1,70 @@
+{
+  "id": null,
+  "uid": "nab-analysis",
+  "title": "NAB Analysis",
+  "tags": ["anomaly", "nab", "mlflow"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "timeseries",
+      "title": "NAB Standard: Current vs Rolling Mean vs Best",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"latest\"}", "legendFormat": "current {{model_name}} {{dataset_scenario}}"},
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"rolling_mean_5\"}", "legendFormat": "rolling_mean_5 {{model_name}} {{dataset_scenario}}"},
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"best\"}", "legendFormat": "best_so_far {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "NAB Standard: Current vs Rolling Mean",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=~\"latest|rolling_mean_5\"}", "legendFormat": "val_nab_standard {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "NAB Low FP: Current vs Rolling Mean",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fp\",aggregation=~\"latest|rolling_mean_5\"}", "legendFormat": "val_nab_low_fp {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "NAB Low FN: Current vs Rolling Mean",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fn\",aggregation=~\"latest|rolling_mean_5\"}", "legendFormat": "val_nab_low_fn {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "NAB Standard Delta vs Previous Mean",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"delta_vs_previous_mean\"}", "legendFormat": "val_nab_standard delta_vs_prev_mean {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "NAB Low FP Delta vs Previous Mean",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fp\",aggregation=\"delta_vs_previous_mean\"}", "legendFormat": "val_nab_low_fp delta_vs_prev_mean {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "NAB Low FN Delta vs Previous Mean",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 48},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fn\",aggregation=\"delta_vs_previous_mean\"}", "legendFormat": "val_nab_low_fn delta_vs_prev_mean {{model_name}} {{dataset_scenario}}"}
+      ]
+    }
+  ]
+}
