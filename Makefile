@@ -60,18 +60,16 @@ setup_dvc:
 	uv run dvc remote modify --local minio_storage secret_access_key "$$MINIO_SECRET_KEY"; \
 	echo "DVC configured"
 
-## Download versioned data from DVC remote
+## Download versioned data and models from DVC remote
 .PHONY: data_pull
 data_pull:
-	dvc pull
-	mkdir -p data/raw
-	@if [ -d data/valve1 ]; then mv data/valve1 data/raw/; fi
+	dvc pull data/valve1.dvc models/models.dvc
 
 ## Upload versioned data to DVC remote
+# TODO: delete move
 .PHONY: data_push
 data_push:
 	dvc push
-	@if [ -d data/raw/valve1 ]; then mv data/raw/valve1 data/valve1; fi
 
 ## Run MLflow UI for current local mlruns
 .PHONY: mlflow_ui
@@ -147,6 +145,40 @@ train: requirements features
 .PHONY: predict
 predict: requirements features
 	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.predict --model-name $(MODEL) --dataset-scenario $(DATA_SCENARIO)
+
+#################################################################################
+# DOCKER                                                                        #
+#################################################################################
+
+## Build Docker images from docker-compose.yml
+.PHONY: docker_build
+docker_build:
+	docker compose build
+
+## Open interactive bash shell in app container
+.PHONY: docker_run
+docker_run:
+	docker compose run --rm app bash
+
+## Train selected model inside Docker (MODEL=isolation_forest|conv_ae|lstm_ae)
+.PHONY: train_docker
+train_docker:
+	docker compose run --rm app make train
+
+## Run inference inside Docker (MODEL=isolation_forest|conv_ae|lstm_ae)
+.PHONY: predict_docker
+predict_docker:
+	docker compose run --rm app make predict
+
+## Run tests inside Docker
+.PHONY: test_docker
+test_docker:
+	docker compose run --rm app make test
+
+## Run lint checks inside Docker
+.PHONY: lint_docker
+lint_docker:
+	docker compose run --rm app make lint
 
 
 #################################################################################

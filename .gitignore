@@ -191,7 +191,7 @@ cython_debug/
 mlruns/
 
 # Data raw directory
-data/raw/
+data/raw/*
 
 # Data processed directory
 data/processed/
@@ -202,8 +202,10 @@ data/interim/
 # Data external directory
 data/external/
 
-# Models directory
-models/
+# Models directory (track only DVC metadata)
+!models/
+models/*
+!models/*.dvc
 
 # Reports directory
 reports/
