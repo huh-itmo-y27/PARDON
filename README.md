@@ -1,94 +1,77 @@
 # pumps-anomaly-detection
 
-<a target="_blank" href="https://cookiecutter-data-science.drivendata.org/">
-    <img src="https://img.shields.io/badge/CCDS-Project%20template-328F97?logo=cookiecutter" />
-</a>
+[![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://huh-itmo-y27.github.io/PARDON/)
 
-## Implemented pipelines
+Production-oriented anomaly detection project with:
 
-- `isolation_forest` (baseline, sklearn)
-- `conv_ae` (TensorFlow/Keras convolutional autoencoder)
-- `lstm_ae` (TensorFlow/Keras sequence autoencoder)
-
-All pipelines are integrated in `anomaly_detection` and trained/predicted
-through a unified CLI.
-
-## Data contract
-
-Place raw CSV files under `data/raw`. Each file must contain:
-
-- `datetime` (timestamp column)
-- feature columns (any numeric sensor columns)
-- `anomaly` (0/1)
-- `changepoint` (0/1)
-
-CSV separator is `;` by default.
+- SKAB-style dataset processing
+- multiple model backends (`isolation_forest`, `conv_ae`, `lstm_ae`)
+- MLflow experiment tracking and optional model registry
+- drift metrics (data, target, concept proxy)
+- Prometheus + Grafana monitoring dashboards
 
 ## Quick start
 
-Install dependencies:
-
 ```bash
 make requirements
+make dataset DATA_SCENARIO=valve1
+make features DATA_SCENARIO=valve1
+make train MODEL=isolation_forest DATA_SCENARIO=valve1
+make predict MODEL=isolation_forest DATA_SCENARIO=valve1
 ```
 
-Configure DVC credentials from `.env` and pull versioned data:
+Start local monitoring:
 
 ```bash
-# Set MINIO_ACCESS_KEY and MINIO_SECRET_KEY in .env first
-make setup_dvc
-make data_pull
+make monitoring_up
 ```
 
-Prepare canonical train/val/test splits:
+Endpoints:
 
-```bash
-make dataset
-```
+- Grafana: `http://localhost:3000`
+- Prometheus: `http://localhost:9090`
+- MLflow UI: `make mlflow_ui` (default port `5000`)
 
-Generate scaled feature files:
+## Documentation
 
-```bash
-make features
-```
+Detailed docs live in `docs/` and are split by topic:
 
-Train a model (`MODEL=isolation_forest|conv_ae|lstm_ae`):
+- `Getting Started`
+- `Dataset (SKAB)`
+- `Models`
+- `MLflow`
+- `Monitoring`
+- `Publish Docs`
 
-```bash
-make train MODEL=isolation_forest
-```
+## Common commands
 
-Run inference:
+- `make requirements` - install dependencies
+- `make dataset DATA_SCENARIO=<scenario>` - build train/val/test splits
+- `make features DATA_SCENARIO=<scenario>` - build scaled feature datasets
+- `make train MODEL=<model> DATA_SCENARIO=<scenario>` - train and evaluate model
+- `make predict MODEL=<model> DATA_SCENARIO=<scenario>` - generate predictions
+- `make mlflow_ui` - start MLflow tracking UI
+- `make monitoring_up` / `make monitoring_down` - start/stop monitoring stack
 
-```bash
-make predict MODEL=isolation_forest
-```
+## Data requirements
 
-Open MLflow UI for current `mlruns`:
+Raw CSV files are discovered recursively under `data/raw` and are expected to
+contain:
 
-```bash
-make mlflow_ui
-# optional custom port:
-# make mlflow_ui MLFLOW_PORT=5001
-```
+- `datetime`
+- numeric feature columns
+- `anomaly` (0/1)
+- `changepoint` (0/1)
 
-## MLflow
+If a file is missing required label columns, dataset creation fails for that
+scenario.
 
-Training logs parameters, metrics, and model artifacts to MLflow
-(`file:./mlruns` by default). The training command also attempts model
-registration in MLflow registry under:
+## Project structure
 
-- `anomaly_detection_isolation_forest`
-- `anomaly_detection_conv_ae`
-- `anomaly_detection_lstm_ae`
-
-## Main directories
-
-- `anomaly_detection/config.py` - project constants and defaults
-- `anomaly_detection/dataset.py` - raw data validation and deterministic split
-- `anomaly_detection/features.py` - scaling and feature metadata generation
-- `anomaly_detection/modeling/train.py` - train + evaluate + MLflow logging
-- `anomaly_detection/modeling/predict.py` - inference for local or MLflow model
-- `models/` - serialized model artifacts and metadata
-- `data/processed/` - canonical split and transformed feature files
+- `anomaly_detection/` - core package
+- `anomaly_detection/modeling/` - model training and inference
+- `anomaly_detection/monitoring/` - drift and metrics integration
+- `monitoring/` - Prometheus/Grafana configs and dashboards
+- `data/processed/` - generated splits and feature data
+- `models/` - saved model artifacts and metadata
 

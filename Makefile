@@ -112,12 +112,12 @@ features: requirements dataset
 ## Train selected model pipeline
 .PHONY: train
 train: requirements features
-	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.train --model-name $(MODEL)
+	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.train --model-name $(MODEL) --dataset-scenario $(DATA_SCENARIO)
 
 ## Run inference with selected model pipeline
 .PHONY: predict
 predict: requirements features
-	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.predict --model-name $(MODEL)
+	$(PYTHON_INTERPRETER) -m anomaly_detection.modeling.predict --model-name $(MODEL) --dataset-scenario $(DATA_SCENARIO)
 
 #################################################################################
 # DOCKER                                                                        #
