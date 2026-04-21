@@ -1,3 +1,4 @@
+import os
 from pathlib import Path
 
 from dotenv import load_dotenv
@@ -36,9 +37,25 @@ DEFAULT_TIME_STEPS = 60
 DEFAULT_THRESHOLD_QUANTILE = 0.99
 
 # MLflow defaults
-MLFLOW_TRACKING_URI = "file:./mlruns"
-MLFLOW_EXPERIMENT_NAME = "anomaly_detection"
-MLFLOW_REGISTERED_MODEL_PREFIX = "anomaly_detection"
+MLFLOW_TRACKING_URI = os.getenv("MLFLOW_TRACKING_URI", "file:./mlruns")
+MLFLOW_EXPERIMENT_NAME = os.getenv(
+    "MLFLOW_EXPERIMENT_NAME", "anomaly_detection"
+)
+MLFLOW_INFERENCE_EXPERIMENT_NAME = os.getenv(
+    "MLFLOW_INFERENCE_EXPERIMENT_NAME", "anomaly_detection_inference"
+)
+MLFLOW_REGISTERED_MODEL_PREFIX = os.getenv(
+    "MLFLOW_REGISTERED_MODEL_PREFIX", "anomaly_detection"
+)
+
+# Monitoring defaults
+MONITORING_ENABLED = os.getenv("MONITORING_ENABLED", "true").lower() == "true"
+PROMETHEUS_PUSHGATEWAY_URL = os.getenv("PROMETHEUS_PUSHGATEWAY_URL", "")
+PROMETHEUS_GROUPING_ENV = os.getenv("PROMETHEUS_GROUPING_ENV", "local")
+PROMETHEUS_GROUPING_SERVICE = os.getenv(
+    "PROMETHEUS_GROUPING_SERVICE", "anomaly_detection"
+)
+MONITORING_EXPORTER_PORT = int(os.getenv("MONITORING_EXPORTER_PORT", "8010"))
 
 # If tqdm is installed, configure loguru with tqdm.write
 # https://github.com/Delgan/loguru/issues/135
