@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
+import time
 
 from loguru import logger
 import pandas as pd
@@ -47,7 +48,9 @@ def main(
     model_uri: str = "",
     tracking_uri: str = MLFLOW_TRACKING_URI,
     log_to_mlflow: bool = True,
+    dataset_scenario: str = "unknown",
 ) -> None:
+    run_started_at = time.perf_counter()
     test_df = pd.read_csv(processed_dir / "test_features.csv")
     feature_cols = infer_feature_columns(test_df)
     x_test = test_df[feature_cols].to_numpy(dtype=float)
@@ -59,6 +62,7 @@ def main(
             "environment": PROMETHEUS_GROUPING_ENV,
             "service": PROMETHEUS_GROUPING_SERVICE,
             "model_name": model_name,
+            "dataset_scenario": dataset_scenario,
         },
     )
 
@@ -172,6 +176,7 @@ def main(
     emitter.gauge("anomaly_pipeline_run_success", "Run success marker.", 1.0)
     emitter.observe_runtime()
     emitter.flush()
+    infer_duration_seconds = time.perf_counter() - run_started_at
 
     if log_to_mlflow:
         try:
@@ -189,12 +194,16 @@ def main(
                     "source": source,
                     "rows": len(out_df),
                     "model_uri": model_uri,
+                    "dataset_scenario": dataset_scenario,
                 }
             )
             mlflow.log_metric(
                 "anomaly_rate", float(out_df["anomaly_flag"].mean())
             )
             mlflow.log_metric("avg_score", float(out_df["score"].mean()))
+            mlflow.log_metric(
+                "infer_duration_seconds", float(infer_duration_seconds)
+            )
             mlflow.log_metric(
                 "infer_data_drift_score",
                 float(data_drift.get("data_drift_score", 0.0)),

@@ -3,6 +3,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 import json
 from pathlib import Path
+import time
 
 from loguru import logger
 import numpy as np
@@ -151,7 +152,9 @@ def main(
     batch_size: int = 32,
     learning_rate: float = 1e-3,
     verbose: int = 0,
+    dataset_scenario: str = "unknown",
 ) -> None:
+    run_started_at = time.perf_counter()
     np.random.seed(seed)
     train_df, eval_df, eval_split_name = load_splits(processed_dir)
     feature_cols = infer_feature_columns(train_df)
@@ -163,6 +166,7 @@ def main(
             "environment": PROMETHEUS_GROUPING_ENV,
             "service": PROMETHEUS_GROUPING_SERVICE,
             "model_name": model_name,
+            "dataset_scenario": dataset_scenario,
         },
     )
 
@@ -247,6 +251,7 @@ def main(
         "metrics_point": point_metrics,
         "metrics_changepoint": cp_metrics,
         "metrics_nab": nab_metrics,
+        "dataset_scenario": dataset_scenario,
         "drift_reference": drift_reference,
         "drift_eval": {
             "data_drift": data_drift,
@@ -287,10 +292,46 @@ def main(
         "anomaly_pipeline_val_f1", "Validation F1 score.", point_metrics["f1"]
     )
     emitter.gauge(
+        "anomaly_pipeline_val_precision",
+        "Validation precision score.",
+        point_metrics["precision"],
+    )
+    emitter.gauge(
+        "anomaly_pipeline_val_recall",
+        "Validation recall score.",
+        point_metrics["recall"],
+    )
+    emitter.gauge(
         "anomaly_pipeline_val_cp_f1",
         "Validation changepoint F1 score.",
         cp_metrics["f1"],
     )
+    emitter.gauge(
+        "anomaly_pipeline_val_cp_precision",
+        "Validation changepoint precision score.",
+        cp_metrics["precision"],
+    )
+    emitter.gauge(
+        "anomaly_pipeline_val_cp_recall",
+        "Validation changepoint recall score.",
+        cp_metrics["recall"],
+    )
+    if nab_metrics:
+        emitter.gauge(
+            "anomaly_pipeline_val_nab_standard",
+            "Validation NAB Standard score.",
+            nab_metrics["standard"],
+        )
+        emitter.gauge(
+            "anomaly_pipeline_val_nab_low_fp",
+            "Validation NAB LowFP score.",
+            nab_metrics["low_fp"],
+        )
+        emitter.gauge(
+            "anomaly_pipeline_val_nab_low_fn",
+            "Validation NAB LowFN score.",
+            nab_metrics["low_fn"],
+        )
     emitter.gauge(
         "anomaly_pipeline_data_drift_score",
         "Aggregate data drift score.",
@@ -309,6 +350,7 @@ def main(
     emitter.gauge("anomaly_pipeline_run_success", "Run success marker.", 1.0)
     emitter.observe_runtime()
     emitter.flush()
+    train_duration_seconds = time.perf_counter() - run_started_at
 
     if log_to_mlflow:
         try:
@@ -334,6 +376,7 @@ def main(
                     "batch_size": batch_size,
                     "learning_rate": learning_rate,
                     "evaluation_split": eval_split_name,
+                    "dataset_scenario": dataset_scenario,
                 }
             )
             metrics_payload = {
@@ -344,6 +387,7 @@ def main(
                 "val_cp_recall": cp_metrics["recall"],
                 "val_cp_f1": cp_metrics["f1"],
                 "threshold": threshold,
+                "train_duration_seconds": float(train_duration_seconds),
             }
             if nab_metrics:
                 metrics_payload.update(
