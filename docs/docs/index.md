@@ -1,16 +1,38 @@
-# pumps-anomaly-detection documentation!
+# pumps-anomaly-detection documentation
 
-## Description
+## Project overview
 
-A short description of the project.
+This project detects anomalies and changepoints in pump sensor time series with
+multiple model pipelines:
 
-## Commands
+- `isolation_forest`
+- `conv_ae`
+- `lstm_ae`
 
-The Makefile contains the central entry points for common tasks related to this project.
+## Airflow-first orchestration
 
-### Syncing data to cloud storage
+The pipeline is orchestrated by Airflow DAG
+`anomaly_detection_orchestration` in `dags/anomaly_pipeline_dag.py`.
 
-* `make sync_data_up` will use `aws s3 sync` to recursively sync files in `data/` up to `s3://pumps-anomaly-detection/data/`.
-* `make sync_data_down` will use `aws s3 sync` to recursively sync files from `s3://pumps-anomaly-detection/data/` to `data/`.
+Each stage is an explicit task (DVC is **not** part of the DAG—use `make setup_dvc`
+/ `make data_pull` before triggering a run if you need remote data):
+
+1. `build_dataset_splits`
+2. `build_scaled_features`
+3. `train_model`
+4. `log_training_summary`
+5. `predict_batch`
+6. `log_inference_summary`
+
+## Templated runtime controls
+
+The DAG uses Jinja-templated Airflow `params` for runtime control:
+
+- model selection (`model_name`)
+- MLflow settings (`tracking_uri`, `experiment_name`, `log_to_mlflow`, `register_model`)
+- inference source (`predict_source`, `predict_model_uri`)
+- run-safe outputs under `run_root/<dag_id>/<ts_nodash>/...`
+
+See the getting started guide for concrete commands.
 
 
