@@ -1,12 +1,7 @@
 name: Tests With DVC
 
 on:
-  pull_request:
-    branches:
-      - main
-  push:
-    branches:
-      - main
+  workflow_dispatch:
 
 jobs:
   tests-with-dvc:
