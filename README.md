@@ -64,6 +64,90 @@ Run inference:
 make predict MODEL=isolation_forest
 ```
 
+## Airflow orchestration
+
+The project now includes an Airflow DAG that treats each stage as a task:
+
+- dataset split
+- feature generation
+- model training
+- training summary logging
+- batch prediction
+- inference summary logging
+
+DAG file:
+
+- `dags/anomaly_pipeline_dag.py`
+
+Default run outputs are isolated under:
+
+- `data/airflow_runs/<dag_id>/<ts_nodash>/processed`
+- `data/airflow_runs/<dag_id>/<ts_nodash>/models`
+- `data/airflow_runs/<dag_id>/<ts_nodash>/predictions`
+
+Run DVC separately from Airflow (if you need remote data):
+
+```bash
+make setup_dvc
+make data_pull
+```
+
+Install Airflow dependencies:
+
+```bash
+make airflow_requirements
+```
+
+Airflow services are started with `AIRFLOW__CORE__LOAD_EXAMPLES=False`, so
+only project DAGs are shown by default.
+
+Initialize Airflow metadata DB:
+
+```bash
+make airflow_init
+```
+
+For Airflow 3 local bootstrap credentials, run once:
+
+```bash
+make airflow_standalone
+```
+
+Start scheduler and API server (recommended auto-port mode, in separate terminals):
+
+```bash
+make airflow_scheduler_auto
+make airflow_webserver_auto
+```
+
+Alternative manual port control:
+
+```bash
+make airflow_scheduler AIRFLOW_LOG_SERVER_PORT=8794
+make airflow_webserver AIRFLOW_API_PORT=8081
+```
+
+Trigger DAG:
+
+```bash
+make airflow_unpause
+make airflow_trigger MODEL=isolation_forest
+```
+
+Example with custom templated params through Airflow CLI:
+
+```bash
+uv run airflow dags trigger anomaly_detection_orchestration \
+  --conf '{"model_name":"conv_ae","time_steps":30,"register_model":false}'
+```
+
+Check DAG/runs:
+
+```bash
+make airflow_list_dags
+make airflow_list_runs
+```
+
 Open MLflow UI for current `mlruns`:
 
 ```bash

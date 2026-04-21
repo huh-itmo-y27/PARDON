@@ -190,6 +190,15 @@ cython_debug/
 # MLflow runs directory
 mlruns/
 
+# Airflow directory
+.airflow/
+
+# Airflow runs directory
+data/airflow_runs/
+
+# Dags directory
+dags/
+
 # Data raw directory
 data/raw/
 
