@@ -8,7 +8,9 @@ PYTHON_INTERPRETER = uv run python
 UV_HTTP_TIMEOUT ?= 120
 UV_HTTP_RETRIES ?= 3
 MODEL ?= isolation_forest
+DATA_SCENARIO ?= all
 MLFLOW_PORT ?= 5000
+MONITORING_COMPOSE_FILE ?= docker-compose.monitoring.yml
 
 #################################################################################
 # COMMANDS                                                                      #
@@ -76,6 +78,31 @@ data_push:
 mlflow_ui:
 	uv run mlflow ui --backend-store-uri "file:./mlruns" --port $(MLFLOW_PORT)
 
+## Run MLflow to Prometheus exporter
+.PHONY: mlflow_exporter
+mlflow_exporter: requirements
+	$(PYTHON_INTERPRETER) -m anomaly_detection.monitoring.mlflow_exporter
+
+## Start local monitoring stack (Prometheus + Grafana + Pushgateway)
+.PHONY: monitoring_up
+monitoring_up:
+	docker compose -f $(MONITORING_COMPOSE_FILE) up -d
+
+## Stop local monitoring stack
+.PHONY: monitoring_down
+monitoring_down:
+	docker compose -f $(MONITORING_COMPOSE_FILE) down
+
+## Tail monitoring stack logs
+.PHONY: monitoring_logs
+monitoring_logs:
+	docker compose -f $(MONITORING_COMPOSE_FILE) logs -f
+
+## Show monitoring stack service status
+.PHONY: monitoring_status
+monitoring_status:
+	docker compose -f $(MONITORING_COMPOSE_FILE) ps
+
 
 
 
@@ -104,7 +131,7 @@ data: requirements
 ## Prepare canonical split files from raw data
 .PHONY: dataset
 dataset: requirements
-	$(PYTHON_INTERPRETER) -m anomaly_detection.dataset
+	$(PYTHON_INTERPRETER) -m anomaly_detection.dataset --scenario $(DATA_SCENARIO)
 
 ## Generate scaled features for train/val/test
 .PHONY: features
