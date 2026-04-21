@@ -1,4 +1,12 @@
 site_name: pumps-anomaly-detection
-# 
 site_author: Roman Kuklo, George Lopatenko
-# 
+nav:
+  - Home: index.md
+  - Tutorials:
+      - Getting Started: getting-started.md
+  - Guides:
+      - Dataset (SKAB): dataset-skab.md
+      - Models: models.md
+      - MLflow: mlflow.md
+      - Monitoring: monitoring.md
+      - Publish Docs: publish-docs.md
