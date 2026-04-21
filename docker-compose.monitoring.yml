@@ -1,0 +1,41 @@
+services:
+  prometheus:
+    image: prom/prometheus:latest
+    container_name: anomaly_prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./monitoring/prometheus/prometheus.yml:/etc/prometheus/prometheus.yml:ro
+    depends_on:
+      - pushgateway
+      - mlflow_exporter
+
+  pushgateway:
+    image: prom/pushgateway:latest
+    container_name: anomaly_pushgateway
+    ports:
+      - "9091:9091"
+
+  grafana:
+    image: grafana/grafana:latest
+    container_name: anomaly_grafana
+    ports:
+      - "3000:3000"
+    environment:
+      - GF_SECURITY_ADMIN_USER=admin
+      - GF_SECURITY_ADMIN_PASSWORD=admin
+    volumes:
+      - ./monitoring/grafana/provisioning:/etc/grafana/provisioning:ro
+      - ./monitoring/grafana/dashboards:/var/lib/grafana/dashboards:ro
+    depends_on:
+      - prometheus
+
+  mlflow_exporter:
+    image: python:3.10-slim
+    container_name: anomaly_mlflow_exporter
+    working_dir: /app
+    command: /bin/sh -c "pip install --no-cache-dir mlflow prometheus-client typer loguru python-dotenv && python -m anomaly_detection.monitoring.mlflow_exporter --tracking-uri file:./mlruns --port 8010"
+    volumes:
+      - ./:/app
+    ports:
+      - "8010:8010"
