@@ -1,0 +1,92 @@
+{
+  "id": null,
+  "uid": "model-grouped-experiments",
+  "title": "Model Grouped Experiments",
+  "tags": ["anomaly", "mlflow", "grouped"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 1,
+  "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "model_name",
+        "label": "Model",
+        "type": "query",
+        "query": "label_values(mlflow_train_metric_grouped_value, model_name)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      }
+    ]
+  },
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Grouped Current Val F1",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 0},
+      "targets": [
+        {"expr": "mlflow_train_metric_grouped_value{model_name=~\"$model_name\",metric=\"val_f1\",aggregation=\"latest\"}", "legendFormat": "val_f1 latest {{model_name}}"}
+      ]
+    },
+    {
+      "type": "gauge",
+      "title": "Grouped Current NAB Standard",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 10},
+      "targets": [
+        {"expr": "mlflow_train_metric_grouped_value{model_name=~\"$model_name\",metric=\"val_nab_standard\",aggregation=\"latest\"}", "legendFormat": "val_nab_standard latest {{model_name}}"}
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Quality vs Speed Proxy (F1 per Train Second)",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 20},
+      "targets": [
+        {"expr": "mlflow_train_metric_grouped_value{model_name=~\"$model_name\",metric=\"val_f1\",aggregation=\"latest\"} / clamp_min(mlflow_train_metric_grouped_value{model_name=~\"$model_name\",metric=\"train_duration_seconds\",aggregation=\"latest\"}, 0.001)", "legendFormat": "f1_per_second {{model_name}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "Prediction Dynamics By Model",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 30},
+      "targets": [
+        {"expr": "mlflow_infer_metric_grouped_value{model_name=~\"$model_name\",metric=\"anomaly_rate\",aggregation=\"latest\"}", "legendFormat": "anomaly_rate latest {{model_name}}"},
+        {"expr": "mlflow_infer_metric_grouped_value{model_name=~\"$model_name\",metric=\"avg_score\",aggregation=\"latest\"}", "legendFormat": "avg_score latest {{model_name}}"},
+        {"expr": "mlflow_infer_metric_grouped_value{model_name=~\"$model_name\",metric=\"infer_data_drift_score\",aggregation=\"latest\"}", "legendFormat": "infer_data_drift_score latest {{model_name}}"}
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Experiment-over-Experiment Aggregates",
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 40},
+      "targets": [
+        {"expr": "mlflow_train_metric_grouped_value{model_name=~\"$model_name\",metric=~\"val_f1|val_cp_f1|val_nab_standard\",aggregation=~\"latest|previous_mean|rolling_mean_5|best|all_mean|delta_vs_previous_mean\"}", "legendFormat": "{{metric}} {{aggregation}} {{model_name}}"}
+      ]
+    },
+    {
+      "type": "heatmap",
+      "title": "Grouped Train Metric Intensity Heatmap",
+      "gridPos": {"h": 12, "w": 24, "x": 0, "y": 52},
+      "targets": [
+        {"expr": "mlflow_train_metric_grouped_value{model_name=~\"$model_name\",metric=~\"val_f1|val_cp_f1|val_nab_standard|train_data_drift_score\",aggregation=\"rolling_mean_5\"}", "legendFormat": "{{metric}} {{model_name}}"}
+      ]
+    },
+    {
+      "type": "state-timeline",
+      "title": "Grouped Drift State Timeline",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 64},
+      "targets": [
+        {"expr": "mlflow_train_metric_grouped_state{model_name=~\"$model_name\",metric=~\"train_data_drift_score|train_target_drift_score|train_concept_drift_proxy_score\"}", "legendFormat": "{{metric}} {{state}} {{model_name}}"}
+      ]
+    },
+    {
+      "type": "histogram",
+      "title": "Grouped Val F1 Distribution (Histogram)",
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 74},
+      "targets": [
+        {"expr": "mlflow_train_metric_grouped_histogram_bucket{model_name=~\"$model_name\",metric=\"val_f1\"}", "legendFormat": "val_f1 le={{le}} {{model_name}}"}
+      ]
+    }
+  ]
+}

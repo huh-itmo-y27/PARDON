@@ -5,103 +5,127 @@
   "tags": ["anomaly", "runs"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 5,
+  "version": 6,
   "refresh": "15s",
+  "templating": {
+    "list": [
+      {
+        "name": "model_name",
+        "label": "Model",
+        "type": "query",
+        "query": "label_values(anomaly_pipeline_run_success, model_name)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      },
+      {
+        "name": "config",
+        "label": "Config",
+        "type": "query",
+        "query": "label_values(anomaly_pipeline_run_success, dataset_scenario)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      }
+    ]
+  },
   "panels": [
     {
       "type": "timeseries",
       "title": "Job Duration (s)",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
-      "targets": [{"expr": "anomaly_pipeline_job_duration_seconds", "legendFormat": "{{job}} {{model_name}} {{dataset_scenario}}"}]
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "anomaly_pipeline_job_duration_seconds{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "{{job}} {{model_name}} {{dataset_scenario}}"}]
     },
     {
       "type": "timeseries",
       "title": "Rows Processed",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
-      "targets": [{"expr": "anomaly_pipeline_rows_total", "legendFormat": "{{job}} {{model_name}} {{dataset_scenario}}"}]
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 10},
+      "targets": [{"expr": "anomaly_pipeline_rows_total{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "{{job}} {{model_name}} {{dataset_scenario}}"}]
     },
     {
       "type": "timeseries",
       "title": "Anomaly Rate",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
-      "targets": [{"expr": "anomaly_pipeline_anomaly_rate", "legendFormat": "{{job}} {{model_name}} {{dataset_scenario}}"}]
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 20},
+      "targets": [{"expr": "anomaly_pipeline_anomaly_rate{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "{{job}} {{model_name}} {{dataset_scenario}}"}]
     },
     {
       "type": "timeseries",
       "title": "Average Score",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
-      "targets": [{"expr": "anomaly_pipeline_avg_score", "legendFormat": "{{job}} {{model_name}} {{dataset_scenario}}"}]
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 30},
+      "targets": [{"expr": "anomaly_pipeline_avg_score{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "{{job}} {{model_name}} {{dataset_scenario}}"}]
     },
     {
       "type": "timeseries",
       "title": "Validation Precision",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 40},
       "targets": [
-        {"expr": "anomaly_pipeline_val_precision", "legendFormat": "val_precision {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_precision{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_precision {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Validation Recall",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 50},
       "targets": [
-        {"expr": "anomaly_pipeline_val_recall", "legendFormat": "val_recall {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_recall{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_recall {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Validation F1",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 48},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 60},
       "targets": [
-        {"expr": "anomaly_pipeline_val_f1", "legendFormat": "val_f1 {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_f1{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_f1 {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Validation CP Precision",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 56},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 70},
       "targets": [
-        {"expr": "anomaly_pipeline_val_cp_precision", "legendFormat": "val_cp_precision {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_cp_precision{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_cp_precision {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Validation CP Recall",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 64},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 80},
       "targets": [
-        {"expr": "anomaly_pipeline_val_cp_recall", "legendFormat": "val_cp_recall {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_cp_recall{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_cp_recall {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Validation CP F1",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 72},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 90},
       "targets": [
-        {"expr": "anomaly_pipeline_val_cp_f1", "legendFormat": "val_cp_f1 {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_cp_f1{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_cp_f1 {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Validation NAB Standard",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 80},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 100},
       "targets": [
-        {"expr": "anomaly_pipeline_val_nab_standard", "legendFormat": "nab_standard {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_nab_standard{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "nab_standard {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Validation NAB Low FP",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 88},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 110},
       "targets": [
-        {"expr": "anomaly_pipeline_val_nab_low_fp", "legendFormat": "nab_low_fp {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_nab_low_fp{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "nab_low_fp {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Validation NAB Low FN",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 96},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 120},
       "targets": [
-        {"expr": "anomaly_pipeline_val_nab_low_fn", "legendFormat": "nab_low_fn {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_nab_low_fn{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "nab_low_fn {{model_name}} {{dataset_scenario}}"}
       ]
     }
   ]
