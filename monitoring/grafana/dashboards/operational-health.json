@@ -1,0 +1,60 @@
+{
+  "id": null,
+  "uid": "operational-health",
+  "title": "Operational Health",
+  "tags": ["anomaly", "ops"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 5,
+  "refresh": "15s",
+  "panels": [
+    {
+      "type": "stat",
+      "title": "Run Success Marker",
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "anomaly_pipeline_run_success", "legendFormat": "{{model_name}} {{dataset_scenario}}"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Data Drift Score",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 6},
+      "targets": [{"expr": "anomaly_pipeline_data_drift_score", "legendFormat": "data_drift {{model_name}} {{dataset_scenario}}"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Target Drift Score",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14},
+      "targets": [{"expr": "anomaly_pipeline_target_drift_score", "legendFormat": "target_drift {{model_name}} {{dataset_scenario}}"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "Concept Drift Proxy",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 22},
+      "targets": [{"expr": "anomaly_pipeline_concept_drift_score", "legendFormat": "concept_drift {{model_name}} {{dataset_scenario}}"}]
+    },
+    {
+      "type": "timeseries",
+      "title": "NAB Standard Operational",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 30},
+      "targets": [
+        {"expr": "anomaly_pipeline_val_nab_standard", "legendFormat": "nab_standard {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "NAB Low FP Operational",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 38},
+      "targets": [
+        {"expr": "anomaly_pipeline_val_nab_low_fp", "legendFormat": "nab_low_fp {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "timeseries",
+      "title": "NAB Low FN Operational",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 46},
+      "targets": [
+        {"expr": "anomaly_pipeline_val_nab_low_fn", "legendFormat": "nab_low_fn {{model_name}} {{dataset_scenario}}"}
+      ]
+    }
+  ]
+}
