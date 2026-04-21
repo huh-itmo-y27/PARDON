@@ -191,7 +191,12 @@ def main(
             datetime_series=eval_df["datetime"],
         )
     except Exception as exc:
-        logger.warning("NAB metrics were not computed: {}", exc)
+        logger.opt(exception=True).warning(
+            "NAB metrics were not computed (model={} split={}): {}",
+            model_name,
+            eval_split_name,
+            exc,
+        )
 
     model_dir = output_dir / model_name
     model.save(model_dir)
