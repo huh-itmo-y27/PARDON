@@ -4,7 +4,7 @@
 
 ![Python](https://img.shields.io/badge/python-3.10-blue.svg)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://huh-itmo-y27.github.io/PARDON/)
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/AaLexUser/Fedot-assistant)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/huh-itmo-y27/PARDON)
 
 </div>
 
