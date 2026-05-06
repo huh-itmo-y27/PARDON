@@ -1,8 +1,14 @@
-# pumps-anomaly-detection
+<div align="center">
 
+<img src="./docs/pardon-logo.svg" width="600" alt="PARDON logo">
+
+![Python](https://img.shields.io/badge/python-3.10-blue.svg)
 [![Docs](https://img.shields.io/badge/docs-GitHub%20Pages-blue)](https://huh-itmo-y27.github.io/PARDON/)
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/AaLexUser/Fedot-assistant)
 
-Production-oriented anomaly detection project with:
+</div>
+
+PARDON (Pumps Anomaly Recognition & Detection On Network) is a production-oriented anomaly detection project with:
 
 - SKAB-style dataset processing
 - multiple model backends (`isolation_forest`, `conv_ae`, `lstm_ae`)
