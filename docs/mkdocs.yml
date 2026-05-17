@@ -9,4 +9,5 @@ nav:
       - Models: models.md
       - MLflow: mlflow.md
       - Monitoring: monitoring.md
+      - CD with Argo CD: cd-argocd.md
       - Publish Docs: publish-docs.md

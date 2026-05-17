@@ -9,6 +9,7 @@ Production-oriented anomaly detection project with:
 - MLflow experiment tracking and optional model registry
 - drift metrics (data, target, concept proxy)
 - Prometheus + Grafana monitoring dashboards
+- CD to Kubernetes with Argo CD and GHCR
 
 ## Quick start
 
@@ -41,6 +42,7 @@ Detailed docs live in `docs/` and are split by topic:
 - `Models`
 - `MLflow`
 - `Monitoring`
+- `CD with Argo CD`
 - `Publish Docs`
 
 ## Common commands
