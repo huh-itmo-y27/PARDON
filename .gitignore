@@ -215,3 +215,10 @@ figures/
 
 # SKAB directory
 SKAB/
+
+# Next.js UI
+services/ui/node_modules/
+services/ui/.next/
+
+# API service runtime state
+data/processed/service.db
