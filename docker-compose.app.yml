@@ -1,0 +1,65 @@
+services:
+  postgres:
+    profiles: ["app"]
+    image: postgres:16-alpine
+    container_name: pardon_postgres
+    environment:
+      - POSTGRES_DB=pardon
+      - POSTGRES_USER=pardon
+      - POSTGRES_PASSWORD=pardon
+    ports:
+      - "5433:5432"
+    volumes:
+      - pardon_postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U pardon -d pardon"]
+      interval: 10s
+      timeout: 5s
+      retries: 8
+
+  api:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: services/api/Dockerfile
+    container_name: pardon_api
+    working_dir: /app
+    environment:
+      - API_DEFAULT_MODEL=${MODEL:-isolation_forest}
+      - PARDON_DATABASE_URL=postgresql+psycopg://pardon:pardon@postgres:5432/pardon
+      - PARDON_RETRAIN_AUTH_ENABLED=${PARDON_RETRAIN_AUTH_ENABLED:-false}
+      - PARDON_RETRAIN_BEARER_TOKEN=${PARDON_RETRAIN_BEARER_TOKEN:-}
+      - PARDON_CORS_ALLOWED_ORIGINS=${PARDON_CORS_ALLOWED_ORIGINS:-http://localhost:3001}
+    volumes:
+      - .:/app
+    ports:
+      - "8000:8000"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: /bin/sh -c "alembic upgrade head && uvicorn services.api.app.main:app --host 0.0.0.0 --port 8000 --reload"
+    healthcheck:
+      test: ["CMD", "python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:8000/healthz')"]
+      interval: 15s
+      timeout: 5s
+      retries: 8
+      start_period: 90s
+
+  ui:
+    profiles: ["app"]
+    build:
+      context: .
+      dockerfile: services/ui/Dockerfile
+    container_name: pardon_ui
+    environment:
+      - NEXT_PUBLIC_API_BASE_URL=http://api:8000
+      - NEXT_PUBLIC_RETRAIN_API_TOKEN=${NEXT_PUBLIC_RETRAIN_API_TOKEN:-}
+    ports:
+      - "3001:3001"
+    depends_on:
+      api:
+        condition: service_healthy
+
+volumes:
+  pardon_postgres_data:
+

@@ -1,5 +1,6 @@
 services:
   prometheus:
+    profiles: ["monitoring"]
     image: prom/prometheus:latest
     container_name: anomaly_prometheus
     ports:
@@ -11,12 +12,14 @@ services:
       - mlflow_exporter
 
   pushgateway:
+    profiles: ["monitoring"]
     image: prom/pushgateway:latest
     container_name: anomaly_pushgateway
     ports:
       - "9091:9091"
 
   grafana:
+    profiles: ["monitoring"]
     image: grafana/grafana:latest
     container_name: anomaly_grafana
     ports:
@@ -31,6 +34,7 @@ services:
       - prometheus
 
   mlflow_exporter:
+    profiles: ["monitoring"]
     image: python:3.10-slim
     container_name: anomaly_mlflow_exporter
     working_dir: /app
