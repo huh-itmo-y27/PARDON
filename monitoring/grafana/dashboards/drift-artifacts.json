@@ -5,71 +5,95 @@
   "tags": ["anomaly", "drift", "artifacts"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "model_name",
+        "label": "Model",
+        "type": "query",
+        "query": "label_values(drift_artifact_reference_row_count, model_name)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      },
+      {
+        "name": "config",
+        "label": "Config",
+        "type": "query",
+        "query": "label_values(drift_artifact_reference_row_count, dataset_scenario)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      }
+    ]
+  },
   "panels": [
     {
       "type": "table",
       "title": "Reference Row Count",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 0},
       "targets": [
-        {"expr": "drift_artifact_reference_row_count", "legendFormat": "reference_row_count {{model_name}} {{dataset_scenario}}"}
+        {"expr": "drift_artifact_reference_row_count{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "reference_row_count {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "table",
       "title": "Reference Label Rates",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 10},
       "targets": [
-        {"expr": "drift_artifact_reference_label_rate", "legendFormat": "label_rate {{label}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "drift_artifact_reference_label_rate{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "label_rate {{label}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Aggregate Drift Scores From Artifacts",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 20},
       "targets": [
-        {"expr": "drift_artifact_aggregate_metric", "legendFormat": "{{metric}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "drift_artifact_aggregate_metric{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "{{metric}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Feature PSI From Drift Report",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 30},
       "targets": [
-        {"expr": "drift_artifact_feature_metric{metric=\"psi\"}", "legendFormat": "psi {{feature}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "drift_artifact_feature_metric{metric=\"psi\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "psi {{feature}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "table",
       "title": "Top 10 Drifted Features by PSI",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 40},
       "targets": [
-        {"expr": "topk(10, drift_artifact_feature_metric{metric=\"psi\"})", "legendFormat": "top_psi {{feature}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "topk(10, drift_artifact_feature_metric{metric=\"psi\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"})", "legendFormat": "top_psi {{feature}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Feature Outside-Band Rate",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 50},
       "targets": [
-        {"expr": "drift_artifact_feature_metric{metric=\"outside_reference_band_rate\"}", "legendFormat": "outside_band {{feature}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "drift_artifact_feature_metric{metric=\"outside_reference_band_rate\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "outside_band {{feature}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Feature Mean Shift Z",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 48},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 60},
       "targets": [
-        {"expr": "drift_artifact_feature_metric{metric=\"mean_shift_z\"}", "legendFormat": "mean_shift_z {{feature}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "drift_artifact_feature_metric{metric=\"mean_shift_z\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "mean_shift_z {{feature}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "table",
       "title": "Reference Feature Stats (p50)",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 56},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 70},
       "targets": [
-        {"expr": "drift_artifact_reference_feature_stat{stat=\"p50\"}", "legendFormat": "p50 {{feature}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "drift_artifact_reference_feature_stat{stat=\"p50\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "p50 {{feature}} {{model_name}} {{dataset_scenario}}"}
       ]
     }
   ]

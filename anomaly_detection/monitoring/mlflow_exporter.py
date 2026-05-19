@@ -76,6 +76,15 @@ def _group_runs_by_model_dataset(runs):
     return grouped
 
 
+def _group_runs_by_model(runs):
+    grouped = defaultdict(list)
+    for run in runs:
+        params = run.data.params
+        model_name = params.get("model_name", "unknown")
+        grouped[model_name].append(run)
+    return grouped
+
+
 def _safe_float(value) -> float:
     if isinstance(value, bool):
         return 1.0 if value else 0.0
@@ -83,6 +92,16 @@ def _safe_float(value) -> float:
         return float(value)
     except (TypeError, ValueError):
         return 0.0
+
+
+def _histogram_counts(values: list[float], bins: list[float]) -> list[int]:
+    counts = [0 for _ in bins]
+    for value in values:
+        for idx, boundary in enumerate(bins):
+            if value <= boundary:
+                counts[idx] += 1
+                break
+    return counts
 
 
 @app.command()
@@ -147,12 +166,43 @@ def main(
         "Aggregate drift metrics from drift_report.json.",
         ["model_name", "dataset_scenario", "metric"],
     )
+    train_metric_grouped_value = Gauge(
+        "mlflow_train_metric_grouped_value",
+        "Train metric aggregates grouped across datasets.",
+        ["model_name", "metric", "aggregation"],
+    )
+    infer_metric_grouped_value = Gauge(
+        "mlflow_infer_metric_grouped_value",
+        "Inference metric aggregates grouped across datasets.",
+        ["model_name", "metric", "aggregation"],
+    )
+    train_metric_grouped_state = Gauge(
+        "mlflow_train_metric_grouped_state",
+        "State proxy for grouped train metrics (1=improving,0=stable,-1=degrading).",
+        ["model_name", "metric", "state"],
+    )
+    infer_metric_grouped_state = Gauge(
+        "mlflow_infer_metric_grouped_state",
+        "State proxy for grouped inference metrics (1=improving,0=stable,-1=degrading).",
+        ["model_name", "metric", "state"],
+    )
+    train_metric_grouped_histogram = Gauge(
+        "mlflow_train_metric_grouped_histogram_bucket",
+        "Histogram buckets for grouped train metrics.",
+        ["model_name", "metric", "le"],
+    )
+    infer_metric_grouped_histogram = Gauge(
+        "mlflow_infer_metric_grouped_histogram_bucket",
+        "Histogram buckets for grouped inference metrics.",
+        ["model_name", "metric", "le"],
+    )
     start_http_server(port)
     logger.info("MLflow exporter started on port {}", port)
 
     while True:
         train_runs = _get_runs(client, train_experiment_name)
         grouped_train_runs = _group_runs_by_model_dataset(train_runs)
+        grouped_train_by_model = _group_runs_by_model(train_runs)
         for (model_name, dataset_scenario), runs in grouped_train_runs.items():
             train_runs_total.labels(
                 model_name=model_name, dataset_scenario=dataset_scenario
@@ -190,9 +240,74 @@ def main(
                 train_metric_value.labels(
                     **common, aggregation="delta_vs_previous_mean"
                 ).set(latest - prev_mean)
+        for model_name, runs in grouped_train_by_model.items():
+            for metric in TRAIN_METRICS:
+                values = _series_for_metric(runs, metric)
+                latest = values[0] if values else 0.0
+                previous = values[1:] if len(values) > 1 else []
+                all_mean = sum(values) / len(values) if values else 0.0
+                prev_mean = (
+                    sum(previous) / len(previous) if previous else 0.0
+                )
+                rolling = sum(values[:5]) / len(values[:5]) if values else 0.0
+                best = max(values) if values else 0.0
+                delta = latest - prev_mean
+                train_metric_grouped_value.labels(
+                    model_name=model_name, metric=metric, aggregation="latest"
+                ).set(latest)
+                train_metric_grouped_value.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    aggregation="previous_mean",
+                ).set(prev_mean)
+                train_metric_grouped_value.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    aggregation="rolling_mean_5",
+                ).set(rolling)
+                train_metric_grouped_value.labels(
+                    model_name=model_name, metric=metric, aggregation="all_mean"
+                ).set(all_mean)
+                train_metric_grouped_value.labels(
+                    model_name=model_name, metric=metric, aggregation="best"
+                ).set(best)
+                train_metric_grouped_value.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    aggregation="delta_vs_previous_mean",
+                ).set(delta)
+                state = "stable"
+                if delta > 0.02:
+                    state = "improving"
+                elif delta < -0.02:
+                    state = "degrading"
+                train_metric_grouped_state.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    state="improving",
+                ).set(1.0 if state == "improving" else 0.0)
+                train_metric_grouped_state.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    state="stable",
+                ).set(1.0 if state == "stable" else 0.0)
+                train_metric_grouped_state.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    state="degrading",
+                ).set(1.0 if state == "degrading" else 0.0)
+                bins = [0.1, 0.25, 0.5, 0.75, 1.0, 10.0]
+                counts = _histogram_counts(values, bins)
+                for boundary, count in zip(bins, counts):
+                    train_metric_grouped_histogram.labels(
+                        model_name=model_name,
+                        metric=metric,
+                        le=str(boundary),
+                    ).set(float(count))
 
         infer_runs = _get_runs(client, inference_experiment_name)
         grouped_infer_runs = _group_runs_by_model_dataset(infer_runs)
+        grouped_infer_by_model = _group_runs_by_model(infer_runs)
         for (model_name, dataset_scenario), runs in grouped_infer_runs.items():
             infer_runs_total.labels(
                 model_name=model_name, dataset_scenario=dataset_scenario
@@ -230,6 +345,70 @@ def main(
                 infer_metric_value.labels(
                     **common, aggregation="delta_vs_previous_mean"
                 ).set(latest - prev_mean)
+        for model_name, runs in grouped_infer_by_model.items():
+            for metric in INFER_METRICS:
+                values = _series_for_metric(runs, metric)
+                latest = values[0] if values else 0.0
+                previous = values[1:] if len(values) > 1 else []
+                all_mean = sum(values) / len(values) if values else 0.0
+                prev_mean = (
+                    sum(previous) / len(previous) if previous else 0.0
+                )
+                rolling = sum(values[:5]) / len(values[:5]) if values else 0.0
+                best = max(values) if values else 0.0
+                delta = latest - prev_mean
+                infer_metric_grouped_value.labels(
+                    model_name=model_name, metric=metric, aggregation="latest"
+                ).set(latest)
+                infer_metric_grouped_value.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    aggregation="previous_mean",
+                ).set(prev_mean)
+                infer_metric_grouped_value.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    aggregation="rolling_mean_5",
+                ).set(rolling)
+                infer_metric_grouped_value.labels(
+                    model_name=model_name, metric=metric, aggregation="all_mean"
+                ).set(all_mean)
+                infer_metric_grouped_value.labels(
+                    model_name=model_name, metric=metric, aggregation="best"
+                ).set(best)
+                infer_metric_grouped_value.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    aggregation="delta_vs_previous_mean",
+                ).set(delta)
+                state = "stable"
+                if delta > 0.02:
+                    state = "improving"
+                elif delta < -0.02:
+                    state = "degrading"
+                infer_metric_grouped_state.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    state="improving",
+                ).set(1.0 if state == "improving" else 0.0)
+                infer_metric_grouped_state.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    state="stable",
+                ).set(1.0 if state == "stable" else 0.0)
+                infer_metric_grouped_state.labels(
+                    model_name=model_name,
+                    metric=metric,
+                    state="degrading",
+                ).set(1.0 if state == "degrading" else 0.0)
+                bins = [0.1, 0.25, 0.5, 0.75, 1.0, 10.0]
+                counts = _histogram_counts(values, bins)
+                for boundary, count in zip(bins, counts):
+                    infer_metric_grouped_histogram.labels(
+                        model_name=model_name,
+                        metric=metric,
+                        le=str(boundary),
+                    ).set(float(count))
 
         for model_path in sorted(models_dir.glob("*")):
             if not model_path.is_dir():

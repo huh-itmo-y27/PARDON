@@ -5,95 +5,119 @@
   "tags": ["anomaly", "mlflow"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 5,
+  "version": 6,
   "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "model_name",
+        "label": "Model",
+        "type": "query",
+        "query": "label_values(mlflow_train_runs_total, model_name)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      },
+      {
+        "name": "config",
+        "label": "Config",
+        "type": "query",
+        "query": "label_values(mlflow_train_runs_total, dataset_scenario)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      }
+    ]
+  },
   "panels": [
     {
       "type": "stat",
       "title": "Train Runs Total",
-      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 0},
-      "targets": [{"expr": "mlflow_train_runs_total", "legendFormat": "train {{model_name}} {{dataset_scenario}}"}]
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "mlflow_train_runs_total{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "train {{model_name}} {{dataset_scenario}}"}]
     },
     {
       "type": "stat",
       "title": "Inference Runs Total",
-      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 4},
-      "targets": [{"expr": "mlflow_infer_runs_total", "legendFormat": "infer {{model_name}} {{dataset_scenario}}"}]
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 6},
+      "targets": [{"expr": "mlflow_infer_runs_total{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "infer {{model_name}} {{dataset_scenario}}"}]
     },
     {
       "type": "stat",
       "title": "Current Val F1",
-      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 8},
-      "targets": [{"expr": "mlflow_train_metric_value{metric=\"val_f1\",aggregation=\"latest\"}", "legendFormat": "{{model_name}} {{dataset_scenario}} latest"}]
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 12},
+      "targets": [{"expr": "mlflow_train_metric_value{metric=\"val_f1\",aggregation=\"latest\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "{{model_name}} {{dataset_scenario}} latest"}]
     },
     {
       "type": "stat",
       "title": "Val F1 vs Previous Mean",
-      "gridPos": {"h": 4, "w": 24, "x": 0, "y": 12},
-      "targets": [{"expr": "mlflow_train_metric_value{metric=\"val_f1\",aggregation=\"delta_vs_previous_mean\"}", "legendFormat": "{{model_name}} {{dataset_scenario}} delta"}]
+      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 18},
+      "targets": [{"expr": "mlflow_train_metric_value{metric=\"val_f1\",aggregation=\"delta_vs_previous_mean\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "{{model_name}} {{dataset_scenario}} delta"}]
     },
     {
       "type": "timeseries",
       "title": "Train Val F1 Current vs Mean/Best",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 24},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"val_f1\",aggregation=~\"latest|previous_mean|rolling_mean_5|best\"}", "legendFormat": "val_f1 {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"val_f1\",aggregation=~\"latest|previous_mean|rolling_mean_5|best\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_f1 {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Train Val CP F1 Current vs Mean/Best",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 34},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"val_cp_f1\",aggregation=~\"latest|previous_mean|rolling_mean_5|best\"}", "legendFormat": "val_cp_f1 {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"val_cp_f1\",aggregation=~\"latest|previous_mean|rolling_mean_5|best\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_cp_f1 {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Train Val NAB Standard Current vs Mean/Best",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 44},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=~\"latest|previous_mean|rolling_mean_5|best\"}", "legendFormat": "val_nab_standard {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=~\"latest|previous_mean|rolling_mean_5|best\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_nab_standard {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Inference Anomaly Rate Current vs Mean/Best",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 54},
       "targets": [
-        {"expr": "mlflow_infer_metric_value{metric=\"anomaly_rate\",aggregation=~\"latest|previous_mean|rolling_mean_5|best\"}", "legendFormat": "anomaly_rate {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_infer_metric_value{metric=\"anomaly_rate\",aggregation=~\"latest|previous_mean|rolling_mean_5|best\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "anomaly_rate {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Inference Avg Score Current vs Mean/Best",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 48},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 64},
       "targets": [
-        {"expr": "mlflow_infer_metric_value{metric=\"avg_score\",aggregation=~\"latest|previous_mean|rolling_mean_5|best\"}", "legendFormat": "avg_score {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_infer_metric_value{metric=\"avg_score\",aggregation=~\"latest|previous_mean|rolling_mean_5|best\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "avg_score {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Train Data Drift Score Current vs Mean/Best",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 56},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 74},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"train_data_drift_score\",aggregation=~\"latest|previous_mean|rolling_mean_5|all_mean|best\"}", "legendFormat": "train_data_drift_score {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"train_data_drift_score\",aggregation=~\"latest|previous_mean|rolling_mean_5|all_mean|best\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "train_data_drift_score {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Train Target Drift Score Current vs Mean/Best",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 64},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 84},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"train_target_drift_score\",aggregation=~\"latest|previous_mean|rolling_mean_5|all_mean|best\"}", "legendFormat": "train_target_drift_score {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"train_target_drift_score\",aggregation=~\"latest|previous_mean|rolling_mean_5|all_mean|best\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "train_target_drift_score {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "Train Concept Drift Proxy Current vs Mean/Best",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 72},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 94},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"train_concept_drift_proxy_score\",aggregation=~\"latest|previous_mean|rolling_mean_5|all_mean|best\"}", "legendFormat": "train_concept_drift_proxy_score {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"train_concept_drift_proxy_score\",aggregation=~\"latest|previous_mean|rolling_mean_5|all_mean|best\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "train_concept_drift_proxy_score {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     }
   ]

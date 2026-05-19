@@ -5,65 +5,89 @@
   "tags": ["anomaly", "nab", "mlflow"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 2,
+  "version": 3,
   "refresh": "30s",
+  "templating": {
+    "list": [
+      {
+        "name": "model_name",
+        "label": "Model",
+        "type": "query",
+        "query": "label_values(mlflow_train_runs_total, model_name)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      },
+      {
+        "name": "config",
+        "label": "Config",
+        "type": "query",
+        "query": "label_values(mlflow_train_runs_total, dataset_scenario)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      }
+    ]
+  },
   "panels": [
     {
       "type": "timeseries",
       "title": "NAB Standard: Current vs Rolling Mean vs Best",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 0},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"latest\"}", "legendFormat": "current {{model_name}} {{dataset_scenario}}"},
-        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"rolling_mean_5\"}", "legendFormat": "rolling_mean_5 {{model_name}} {{dataset_scenario}}"},
-        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"best\"}", "legendFormat": "best_so_far {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"latest\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "current {{model_name}} {{dataset_scenario}}"},
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"rolling_mean_5\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "rolling_mean_5 {{model_name}} {{dataset_scenario}}"},
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"best\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "best_so_far {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "NAB Standard: Current vs Rolling Mean",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 10},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=~\"latest|rolling_mean_5\"}", "legendFormat": "val_nab_standard {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=~\"latest|rolling_mean_5\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_nab_standard {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "NAB Low FP: Current vs Rolling Mean",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 20},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fp\",aggregation=~\"latest|rolling_mean_5\"}", "legendFormat": "val_nab_low_fp {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fp\",aggregation=~\"latest|rolling_mean_5\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_nab_low_fp {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "NAB Low FN: Current vs Rolling Mean",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 30},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fn\",aggregation=~\"latest|rolling_mean_5\"}", "legendFormat": "val_nab_low_fn {{aggregation}} {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fn\",aggregation=~\"latest|rolling_mean_5\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_nab_low_fn {{aggregation}} {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "NAB Standard Delta vs Previous Mean",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 40},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"delta_vs_previous_mean\"}", "legendFormat": "val_nab_standard delta_vs_prev_mean {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"delta_vs_previous_mean\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_nab_standard delta_vs_prev_mean {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "NAB Low FP Delta vs Previous Mean",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 50},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fp\",aggregation=\"delta_vs_previous_mean\"}", "legendFormat": "val_nab_low_fp delta_vs_prev_mean {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fp\",aggregation=\"delta_vs_previous_mean\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_nab_low_fp delta_vs_prev_mean {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "NAB Low FN Delta vs Previous Mean",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 48},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 60},
       "targets": [
-        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fn\",aggregation=\"delta_vs_previous_mean\"}", "legendFormat": "val_nab_low_fn delta_vs_prev_mean {{model_name}} {{dataset_scenario}}"}
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_low_fn\",aggregation=\"delta_vs_previous_mean\",model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "val_nab_low_fn delta_vs_prev_mean {{model_name}} {{dataset_scenario}}"}
       ]
     }
   ]
