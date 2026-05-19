@@ -5,55 +5,79 @@
   "tags": ["anomaly", "ops"],
   "timezone": "browser",
   "schemaVersion": 39,
-  "version": 5,
+  "version": 6,
   "refresh": "15s",
+  "templating": {
+    "list": [
+      {
+        "name": "model_name",
+        "label": "Model",
+        "type": "query",
+        "query": "label_values(anomaly_pipeline_run_success, model_name)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      },
+      {
+        "name": "config",
+        "label": "Config",
+        "type": "query",
+        "query": "label_values(anomaly_pipeline_run_success, dataset_scenario)",
+        "includeAll": true,
+        "allValue": ".*",
+        "multi": false,
+        "current": {"text": "All", "value": ".*"}
+      }
+    ]
+  },
   "panels": [
     {
       "type": "stat",
       "title": "Run Success Marker",
-      "gridPos": {"h": 6, "w": 24, "x": 0, "y": 0},
-      "targets": [{"expr": "anomaly_pipeline_run_success", "legendFormat": "{{model_name}} {{dataset_scenario}}"}]
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [{"expr": "anomaly_pipeline_run_success{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "{{model_name}} {{dataset_scenario}}"}]
     },
     {
       "type": "timeseries",
       "title": "Data Drift Score",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 6},
-      "targets": [{"expr": "anomaly_pipeline_data_drift_score", "legendFormat": "data_drift {{model_name}} {{dataset_scenario}}"}]
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 8},
+      "targets": [{"expr": "anomaly_pipeline_data_drift_score{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "data_drift {{model_name}} {{dataset_scenario}}"}]
     },
     {
       "type": "timeseries",
       "title": "Target Drift Score",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 14},
-      "targets": [{"expr": "anomaly_pipeline_target_drift_score", "legendFormat": "target_drift {{model_name}} {{dataset_scenario}}"}]
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 18},
+      "targets": [{"expr": "anomaly_pipeline_target_drift_score{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "target_drift {{model_name}} {{dataset_scenario}}"}]
     },
     {
       "type": "timeseries",
       "title": "Concept Drift Proxy",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 22},
-      "targets": [{"expr": "anomaly_pipeline_concept_drift_score", "legendFormat": "concept_drift {{model_name}} {{dataset_scenario}}"}]
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 28},
+      "targets": [{"expr": "anomaly_pipeline_concept_drift_score{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "concept_drift {{model_name}} {{dataset_scenario}}"}]
     },
     {
       "type": "timeseries",
       "title": "NAB Standard Operational",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 30},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 38},
       "targets": [
-        {"expr": "anomaly_pipeline_val_nab_standard", "legendFormat": "nab_standard {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_nab_standard{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "nab_standard {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "NAB Low FP Operational",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 38},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 48},
       "targets": [
-        {"expr": "anomaly_pipeline_val_nab_low_fp", "legendFormat": "nab_low_fp {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_nab_low_fp{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "nab_low_fp {{model_name}} {{dataset_scenario}}"}
       ]
     },
     {
       "type": "timeseries",
       "title": "NAB Low FN Operational",
-      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 46},
+      "gridPos": {"h": 10, "w": 24, "x": 0, "y": 58},
       "targets": [
-        {"expr": "anomaly_pipeline_val_nab_low_fn", "legendFormat": "nab_low_fn {{model_name}} {{dataset_scenario}}"}
+        {"expr": "anomaly_pipeline_val_nab_low_fn{model_name=~\"$model_name\",dataset_scenario=~\"$config\"}", "legendFormat": "nab_low_fn {{model_name}} {{dataset_scenario}}"}
       ]
     }
   ]
