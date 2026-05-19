@@ -1,16 +1,24 @@
-# pumps-anomaly-detection documentation!
+# pumps-anomaly-detection docs
 
-## Description
+This documentation is organized as separate guides so each topic can be read
+independently.
 
-A short description of the project.
+## Documentation map
 
-## Commands
+- `Getting Started`: first end-to-end run from data prep to dashboards
+- `Dataset (SKAB)`: expected raw data schema and scenario handling
+- `Models`: model families, outputs, and when to use each model
+- `MLflow`: experiment tracking, registry behavior, and troubleshooting
+- `Monitoring`: Prometheus + Grafana setup and dashboard interpretation
+- `Publish Docs`: deployment to GitHub Pages
 
-The Makefile contains the central entry points for common tasks related to this project.
+## Suggested reading order
 
-### Syncing data to cloud storage
-
-* `make sync_data_up` will use `aws s3 sync` to recursively sync files in `data/` up to `s3://pumps-anomaly-detection/data/`.
-* `make sync_data_down` will use `aws s3 sync` to recursively sync files from `s3://pumps-anomaly-detection/data/` to `data/`.
+1. `Getting Started`
+2. `Dataset (SKAB)`
+3. `Models`
+4. `MLflow`
+5. `Monitoring`
+6. `Publish Docs`
 
 

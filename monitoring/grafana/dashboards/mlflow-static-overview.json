@@ -1,0 +1,76 @@
+{
+  "id": null,
+  "uid": "mlflow-static-overview",
+  "title": "MLflow Static Overview",
+  "tags": ["anomaly", "mlflow", "static"],
+  "timezone": "browser",
+  "schemaVersion": 39,
+  "version": 2,
+  "refresh": "30s",
+  "panels": [
+    {
+      "type": "table",
+      "title": "Latest Val F1 By Model and Dataset",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_f1\",aggregation=\"latest\"}", "legendFormat": "val_f1 latest {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Latest NAB Standard By Model and Dataset",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 8},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"latest\"}", "legendFormat": "val_nab_standard latest {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Pareto Proxy: Quality (F1 + NAB) / 2",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+      "targets": [
+        {"expr": "(sum without(metric)(mlflow_train_metric_value{metric=\"val_f1\",aggregation=\"latest\"}) + sum without(metric)(mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"latest\"})) / 2", "legendFormat": "quality_pareto latest {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "Pareto Proxy: Quality / Train Time",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 24},
+      "targets": [
+        {"expr": "sum without(metric)(mlflow_train_metric_value{metric=\"val_f1\",aggregation=\"latest\"}) / clamp_min(sum without(metric)(mlflow_train_metric_value{metric=\"train_duration_seconds\",aggregation=\"latest\"}), 0.001)", "legendFormat": "f1_per_second latest {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "All-Run Mean Val F1",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 32},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_f1\",aggregation=\"all_mean\"}", "legendFormat": "val_f1 all_mean {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "bargauge",
+      "title": "All-Run Mean NAB Standard",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 40},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"all_mean\"}", "legendFormat": "val_nab_standard all_mean {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Latest vs Mean Delta (Val F1)",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 48},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_f1\",aggregation=\"delta_vs_previous_mean\"}", "legendFormat": "val_f1 delta_vs_previous_mean {{model_name}} {{dataset_scenario}}"}
+      ]
+    },
+    {
+      "type": "table",
+      "title": "Latest vs Mean Delta (NAB Standard)",
+      "gridPos": {"h": 8, "w": 24, "x": 0, "y": 56},
+      "targets": [
+        {"expr": "mlflow_train_metric_value{metric=\"val_nab_standard\",aggregation=\"delta_vs_previous_mean\"}", "legendFormat": "val_nab_standard delta_vs_previous_mean {{model_name}} {{dataset_scenario}}"}
+      ]
+    }
+  ]
+}
