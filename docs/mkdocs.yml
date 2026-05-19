@@ -9,4 +9,5 @@ nav:
       - Models: models.md
       - MLflow: mlflow.md
       - Monitoring: monitoring.md
+      - Serving Platform: serving.md
       - Publish Docs: publish-docs.md

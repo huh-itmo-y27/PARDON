@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pardon-postgres
+  namespace: pardon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pardon-postgres
+  template:
+    metadata:
+      labels:
+        app: pardon-postgres
+    spec:
+      containers:
+        - name: postgres
+          image: postgres:16-alpine
+          env:
+            - name: POSTGRES_DB
+              value: pardon
+            - name: POSTGRES_USER
+              value: pardon
+            - name: POSTGRES_PASSWORD
+              value: pardon
+          ports:
+            - containerPort: 5432
+          readinessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U pardon -d pardon
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            exec:
+              command:
+                - /bin/sh
+                - -c
+                - pg_isready -U pardon -d pardon
+            initialDelaySeconds: 20
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pardon-postgres
+  namespace: pardon
+spec:
+  selector:
+    app: pardon-postgres
+  ports:
+    - port: 5432
+      targetPort: 5432
+      protocol: TCP
+

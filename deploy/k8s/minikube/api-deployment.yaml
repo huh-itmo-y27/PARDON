@@ -1,0 +1,61 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pardon-api
+  namespace: pardon
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: pardon-api
+  template:
+    metadata:
+      labels:
+        app: pardon-api
+    spec:
+      containers:
+        - name: api
+          image: pardon-api:latest
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - uv run alembic upgrade head && uv run uvicorn services.api.app.main:app --host 0.0.0.0 --port 8000
+          envFrom:
+            - configMapRef:
+                name: pardon-config
+          ports:
+            - containerPort: 8000
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8000
+            initialDelaySeconds: 8
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8000
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 200m
+              memory: 256Mi
+            limits:
+              cpu: 1
+              memory: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pardon-api
+  namespace: pardon
+spec:
+  selector:
+    app: pardon-api
+  ports:
+    - port: 8000
+      targetPort: 8000
+      protocol: TCP
+
