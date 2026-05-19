@@ -18,6 +18,8 @@ spec:
         app.kubernetes.io/name: pardon
         app.kubernetes.io/component: mlflow-exporter
     spec:
+      imagePullSecrets:
+        - name: ghcr-secret
       containers:
         - name: mlflow-exporter
           image: pardon-app
