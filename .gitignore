@@ -222,3 +222,6 @@ services/ui/.next/
 
 # API service runtime state
 data/processed/service.db
+
+# Local TS build cache
+*.tsbuildinfo
