@@ -13,6 +13,7 @@ on:
 permissions:
   contents: write
   packages: write
+  pull-requests: write
 
 jobs:
   changes:
@@ -209,15 +210,17 @@ jobs:
           UI_IMAGE: ${{ needs.metadata.outputs.ui_name }}
           IMAGE_TAG: ${{ needs.metadata.outputs.tag }}
 
-      - name: Commit updated deployment tag
-        run: |
-          if git diff --quiet deploy/k8s/overlays/argocd/kustomization.yaml; then
-            echo "Deployment tag is already up to date."
-            exit 0
-          fi
+      - name: Create deployment tag update PR
+        uses: peter-evans/create-pull-request@v7
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          add-paths: deploy/k8s/overlays/argocd/kustomization.yaml
+          branch: automation/update-deployment-image-tag
+          delete-branch: true
+          commit-message: Update deployment image tag
+          title: Update deployment image tag
+          body: |
+            Updates the Argo CD image tags after publishing new GHCR images.
 
-          git config user.name "github-actions[bot]"
-          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add deploy/k8s/overlays/argocd/kustomization.yaml
-          git commit -m "Update deployment image tag"
-          git push
+            - API image: `${{ needs.metadata.outputs.api_name }}:${{ needs.metadata.outputs.tag }}`
+            - UI image: `${{ needs.metadata.outputs.ui_name }}:${{ needs.metadata.outputs.tag }}`
