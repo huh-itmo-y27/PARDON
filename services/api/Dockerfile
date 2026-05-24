@@ -1,18 +1,26 @@
+# syntax=docker/dockerfile:1.7
+
 FROM python:3.10-slim
 
 WORKDIR /app
+
+ENV UV_COMPILE_BYTECODE=1 \
+    UV_LINK_MODE=copy
 
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     git \
     && rm -rf /var/lib/apt/lists/*
 
-RUN pip install uv
+RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock* README.md LICENSE ./
-RUN uv sync --dev
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --no-dev --no-install-project
 
 COPY . .
+RUN --mount=type=cache,target=/root/.cache/uv \
+    uv sync --no-dev
 
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000

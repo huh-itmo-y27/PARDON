@@ -11,5 +11,5 @@ data:
   PARDON_RETRAIN_AUTH_ENABLED: "false"
   PARDON_RETRAIN_BEARER_TOKEN: ""
   PARDON_CORS_ALLOWED_ORIGINS: "http://pardon.local"
-  NEXT_PUBLIC_API_BASE_URL: "http://pardon.local"
+  NEXT_PUBLIC_API_BASE_URL: "http://pardon-api:8000"
   NEXT_PUBLIC_RETRAIN_API_TOKEN: ""

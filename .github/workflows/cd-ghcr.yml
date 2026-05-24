@@ -54,6 +54,8 @@ jobs:
           file: services/api/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          cache-from: type=gha,scope=pardon-api
+          cache-to: type=gha,scope=pardon-api,mode=max
           tags: |
             ${{ steps.image.outputs.api_name }}:${{ steps.image.outputs.tag }}
             ${{ steps.image.outputs.api_name }}:latest
@@ -65,8 +67,10 @@ jobs:
           file: services/ui/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
+          cache-from: type=gha,scope=pardon-ui
+          cache-to: type=gha,scope=pardon-ui,mode=max
           build-args: |
-            NEXT_PUBLIC_API_BASE_URL=http://pardon.local
+            NEXT_PUBLIC_API_BASE_URL=http://pardon-api:8000
           tags: |
             ${{ steps.image.outputs.ui_name }}:${{ steps.image.outputs.tag }}
             ${{ steps.image.outputs.ui_name }}:latest

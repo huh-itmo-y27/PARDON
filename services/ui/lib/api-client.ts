@@ -14,6 +14,9 @@ function getApiBaseUrl(): string {
     if (url.hostname === "api") {
       return `${window.location.protocol}//${window.location.hostname}:8000`;
     }
+    if (url.hostname === "pardon-api") {
+      return window.location.origin;
+    }
   } catch {
     // Fall back to the configured value below when it is not an absolute URL.
   }
