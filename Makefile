@@ -270,6 +270,11 @@ k8s_status:
 k8s_logs:
 	kubectl logs -n $(K8S_NAMESPACE) deploy/pardon-api -f
 
+## Keep Kubernetes API and UI port-forwards alive across redeploys
+.PHONY: k8s_port_forward
+k8s_port_forward:
+	K8S_NAMESPACE=$(K8S_NAMESPACE) sh scripts/k8s-port-forward.sh
+
 ## Smoke test Kubernetes service via port-forward
 .PHONY: k8s_smoke
 k8s_smoke:
