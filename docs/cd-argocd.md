@@ -1,17 +1,17 @@
 # Continuous Delivery with Argo CD
 
-This project is deployed to Kubernetes as the MLflow Prometheus exporter.
-Argo CD watches the Kubernetes manifests in `deploy/k8s` and keeps the
-cluster state synchronized with Git.
+This project is deployed to Kubernetes as the PARDON WebUI application.
+Argo CD watches the `deploy/k8s/overlays/argocd` Kustomize overlay and keeps
+the cluster state synchronized with Git.
 
 ## What is deployed
 
-- Docker image: `ghcr.io/huh-itmo-y27/pardon`
+- API Docker image: `ghcr.io/huh-itmo-y27/pardon/api`
+- UI Docker image: `ghcr.io/huh-itmo-y27/pardon/ui`
 - Kubernetes namespace: `pardon`
-- Deployment: `pardon-mlflow-exporter`
-- Service: `pardon-mlflow-exporter`
-- Runtime command: `python -m anomaly_detection.monitoring.mlflow_exporter`
-- Metrics port: `8010`
+- Deployments: `pardon-api`, `pardon-ui`, `pardon-postgres`
+- Services: `pardon-api`, `pardon-ui`, `pardon-postgres`
+- Ingress host: `pardon.local`
 
 ## Repository layout
 
@@ -20,20 +20,27 @@ deploy/
   argocd/
     application.yaml
   k8s/
-    namespace.yaml
-    configmap.yaml
-    deployment.yaml
-    service.yaml
-    kustomization.yaml
+    base/
+      namespace.yaml
+      configmap.yaml
+      deployment.yaml
+      ingress.yaml
+      service.yaml
+      kustomization.yaml
+    overlays/
+      argocd/
+        kustomization.yaml
+      minikube/
+        kustomization.yaml
 ```
 
 ## CD flow
 
 1. A change is pushed to `main`.
-2. GitHub Actions builds the Docker image.
-3. The image is pushed to GHCR with two tags: `latest` and the short commit SHA.
-4. The workflow updates `deploy/k8s/kustomization.yaml` with the new image tag.
-5. Argo CD detects the Git change and syncs the Kubernetes deployment.
+2. GitHub Actions builds the API and UI Docker images.
+3. Both images are pushed to GHCR with two tags: `latest` and the short commit SHA.
+4. The workflow updates `deploy/k8s/overlays/argocd/kustomization.yaml` with the new image tags.
+5. Argo CD detects the Git change and syncs the Kubernetes deployments.
 
 ## One-time GitHub setup
 
@@ -59,6 +66,12 @@ kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/st
 kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
 ```
 
+If you use the `pardon.local` ingress locally, point it to Minikube:
+
+```bash
+echo "$(minikube ip) pardon.local" | sudo tee -a /etc/hosts
+```
+
 ## Create the Argo CD application
 
 ```bash
@@ -70,7 +83,8 @@ Check that Argo CD created and synced the application:
 ```bash
 kubectl -n argocd get applications.argoproj.io pardon
 kubectl -n pardon get pods,svc
-kubectl -n pardon rollout status deployment/pardon-mlflow-exporter
+kubectl -n pardon rollout status deployment/pardon-api
+kubectl -n pardon rollout status deployment/pardon-ui
 ```
 
 ## Open Argo CD UI
@@ -94,27 +108,28 @@ kubectl -n argocd get secret argocd-initial-admin-secret \
   -o jsonpath="{.data.password}" | base64 -d; echo
 ```
 
-## Verify the deployed exporter
+## Verify the deployed WebUI
 
-Forward the service port:
-
-```bash
-kubectl -n pardon port-forward svc/pardon-mlflow-exporter 8010:8010
-```
-
-In another terminal:
+Open the application through ingress:
 
 ```bash
-curl http://localhost:8010/metrics
+curl http://pardon.local
 ```
 
-You should see Prometheus metrics in the response.
+Or forward the UI service locally:
+
+```bash
+kubectl -n pardon port-forward svc/pardon-ui 3001:3001
+```
+
+Open `http://localhost:3001`.
 
 ## Useful troubleshooting commands
 
 ```bash
 kubectl -n pardon describe pod -l app.kubernetes.io/name=pardon
-kubectl -n pardon logs deployment/pardon-mlflow-exporter
+kubectl -n pardon logs deployment/pardon-api
+kubectl -n pardon logs deployment/pardon-ui
 kubectl -n argocd describe applications.argoproj.io pardon
 ```
 

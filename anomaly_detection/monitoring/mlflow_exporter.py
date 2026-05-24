@@ -212,9 +212,7 @@ def main(
                 latest = values[0] if values else 0.0
                 previous = values[1:] if len(values) > 1 else []
                 all_mean = sum(values) / len(values) if values else 0.0
-                prev_mean = (
-                    sum(previous) / len(previous) if previous else 0.0
-                )
+                prev_mean = sum(previous) / len(previous) if previous else 0.0
                 rolling = sum(values[:5]) / len(values[:5]) if values else 0.0
                 best = max(values) if values else 0.0
                 common = {
@@ -222,21 +220,21 @@ def main(
                     "dataset_scenario": dataset_scenario,
                     "metric": metric,
                 }
-                train_metric_value.labels(
-                    **common, aggregation="latest"
-                ).set(latest)
+                train_metric_value.labels(**common, aggregation="latest").set(
+                    latest
+                )
                 train_metric_value.labels(
                     **common, aggregation="previous_mean"
                 ).set(prev_mean)
                 train_metric_value.labels(
                     **common, aggregation="rolling_mean_5"
                 ).set(rolling)
-                train_metric_value.labels(
-                    **common, aggregation="all_mean"
-                ).set(all_mean)
-                train_metric_value.labels(
-                    **common, aggregation="best"
-                ).set(best)
+                train_metric_value.labels(**common, aggregation="all_mean").set(
+                    all_mean
+                )
+                train_metric_value.labels(**common, aggregation="best").set(
+                    best
+                )
                 train_metric_value.labels(
                     **common, aggregation="delta_vs_previous_mean"
                 ).set(latest - prev_mean)
@@ -246,9 +244,7 @@ def main(
                 latest = values[0] if values else 0.0
                 previous = values[1:] if len(values) > 1 else []
                 all_mean = sum(values) / len(values) if values else 0.0
-                prev_mean = (
-                    sum(previous) / len(previous) if previous else 0.0
-                )
+                prev_mean = sum(previous) / len(previous) if previous else 0.0
                 rolling = sum(values[:5]) / len(values[:5]) if values else 0.0
                 best = max(values) if values else 0.0
                 delta = latest - prev_mean
@@ -317,9 +313,7 @@ def main(
                 latest = values[0] if values else 0.0
                 previous = values[1:] if len(values) > 1 else []
                 all_mean = sum(values) / len(values) if values else 0.0
-                prev_mean = (
-                    sum(previous) / len(previous) if previous else 0.0
-                )
+                prev_mean = sum(previous) / len(previous) if previous else 0.0
                 rolling = sum(values[:5]) / len(values[:5]) if values else 0.0
                 best = max(values) if values else 0.0
                 common = {
@@ -327,21 +321,21 @@ def main(
                     "dataset_scenario": dataset_scenario,
                     "metric": metric,
                 }
-                infer_metric_value.labels(
-                    **common, aggregation="latest"
-                ).set(latest)
+                infer_metric_value.labels(**common, aggregation="latest").set(
+                    latest
+                )
                 infer_metric_value.labels(
                     **common, aggregation="previous_mean"
                 ).set(prev_mean)
                 infer_metric_value.labels(
                     **common, aggregation="rolling_mean_5"
                 ).set(rolling)
-                infer_metric_value.labels(
-                    **common, aggregation="all_mean"
-                ).set(all_mean)
-                infer_metric_value.labels(
-                    **common, aggregation="best"
-                ).set(best)
+                infer_metric_value.labels(**common, aggregation="all_mean").set(
+                    all_mean
+                )
+                infer_metric_value.labels(**common, aggregation="best").set(
+                    best
+                )
                 infer_metric_value.labels(
                     **common, aggregation="delta_vs_previous_mean"
                 ).set(latest - prev_mean)
@@ -351,9 +345,7 @@ def main(
                 latest = values[0] if values else 0.0
                 previous = values[1:] if len(values) > 1 else []
                 all_mean = sum(values) / len(values) if values else 0.0
-                prev_mean = (
-                    sum(previous) / len(previous) if previous else 0.0
-                )
+                prev_mean = sum(previous) / len(previous) if previous else 0.0
                 rolling = sum(values[:5]) / len(values[:5]) if values else 0.0
                 best = max(values) if values else 0.0
                 delta = latest - prev_mean
@@ -443,8 +435,18 @@ def main(
                     label=str(label_name),
                 ).set(_safe_float(rate))
 
-            for feature, feature_stats in reference.get("feature_profile", {}).items():
-                for stat_name in ("mean", "std", "p05", "p50", "p95", "min", "max"):
+            for feature, feature_stats in reference.get(
+                "feature_profile", {}
+            ).items():
+                for stat_name in (
+                    "mean",
+                    "std",
+                    "p05",
+                    "p50",
+                    "p95",
+                    "min",
+                    "max",
+                ):
                     if stat_name in feature_stats:
                         drift_reference_feature_stat.labels(
                             model_name=model_name,
@@ -460,7 +462,9 @@ def main(
                 concept_drift = report.get("concept_drift_proxy", {})
                 aggregate_values = {
                     "data_drift_score": data_drift.get("data_drift_score", 0.0),
-                    "data_drift_ks_score": data_drift.get("data_drift_ks_score", 0.0),
+                    "data_drift_ks_score": data_drift.get(
+                        "data_drift_ks_score", 0.0
+                    ),
                     "drifted_feature_count": data_drift.get(
                         "drifted_feature_count", 0
                     ),

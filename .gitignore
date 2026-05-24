@@ -219,6 +219,7 @@ SKAB/
 # Next.js UI
 services/ui/node_modules/
 services/ui/.next/
+!services/ui/lib/
 
 # API service runtime state
 data/processed/service.db

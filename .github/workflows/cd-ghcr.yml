@@ -1,4 +1,4 @@
-name: Build and Publish Image
+name: Build and Publish App Images
 
 on:
   workflow_dispatch:
@@ -6,32 +6,103 @@ on:
     branches:
       - main
     paths-ignore:
-      - "deploy/k8s/kustomization.yaml"
+      - "deploy/k8s/overlays/argocd/kustomization.yaml"
       - "docs/**"
       - "README.md"
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
-  build-and-publish:
+  changes:
     if: github.actor != 'github-actions[bot]'
     runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect app build changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - ".dockerignore"
+              - ".github/workflows/cd-ghcr.yml"
+              - "alembic.ini"
+              - "anomaly_detection/**"
+              - "pyproject.toml"
+              - "services/api/**"
+              - "services/ui/**"
+              - "uv.lock"
+
+  metadata:
+    if: >-
+      github.actor != 'github-actions[bot]'
+      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.app == 'true')
+    needs: changes
+    runs-on: ubuntu-latest
+    outputs:
+      api_name: ${{ steps.image.outputs.api_name }}
+      ui_name: ${{ steps.image.outputs.ui_name }}
+      tag: ${{ steps.image.outputs.tag }}
+    steps:
+      - name: Prepare image metadata
+        id: image
+        run: |
+          image_base="ghcr.io/${GITHUB_REPOSITORY,,}"
+          image_tag="${GITHUB_SHA::12}"
+          {
+            echo "api_name=${image_base}/api"
+            echo "ui_name=${image_base}/ui"
+            echo "tag=${image_tag}"
+          } >> "$GITHUB_OUTPUT"
+
+  build:
+    if: >-
+      github.actor != 'github-actions[bot]'
+      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.app == 'true')
+    needs:
+      - changes
+      - metadata
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - service: api
+            dockerfile: services/api/Dockerfile
+            platform: linux/amd64
+            arch: amd64
+            cache_scope: pardon-api-amd64
+            build_args: ""
+          - service: api
+            dockerfile: services/api/Dockerfile
+            platform: linux/arm64
+            arch: arm64
+            cache_scope: pardon-api-arm64
+            build_args: ""
+          - service: ui
+            dockerfile: services/ui/Dockerfile
+            platform: linux/amd64
+            arch: amd64
+            cache_scope: pardon-ui-amd64
+            build_args: |
+              NEXT_PUBLIC_API_BASE_URL=http://pardon-api:8000
+          - service: ui
+            dockerfile: services/ui/Dockerfile
+            platform: linux/arm64
+            arch: arm64
+            cache_scope: pardon-ui-arm64
+            build_args: |
+              NEXT_PUBLIC_API_BASE_URL=http://pardon-api:8000
 
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
-        with:
-          token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Prepare image metadata
-        id: image
-        run: |
-          image_name="ghcr.io/${GITHUB_REPOSITORY,,}"
-          image_tag="${GITHUB_SHA::12}"
-          echo "name=${image_name}" >> "$GITHUB_OUTPUT"
-          echo "tag=${image_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
         uses: docker/login-action@v3
@@ -41,35 +112,112 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
       
       - name: Set up QEMU
+        if: matrix.arch == 'arm64'
         uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
+      - name: Build and push ${{ matrix.service }} ${{ matrix.arch }} image
         uses: docker/build-push-action@v6
         with:
           context: .
-          platforms: linux/amd64,linux/arm64
+          file: ${{ matrix.dockerfile }}
+          platforms: ${{ matrix.platform }}
           push: true
+          cache-from: type=gha,scope=${{ matrix.cache_scope }}
+          cache-to: type=gha,scope=${{ matrix.cache_scope }},mode=max
+          build-args: ${{ matrix.build_args }}
           tags: |
-            ${{ steps.image.outputs.name }}:${{ steps.image.outputs.tag }}
-            ${{ steps.image.outputs.name }}:latest
+            ${{ matrix.service == 'api' && needs.metadata.outputs.api_name || needs.metadata.outputs.ui_name }}:${{ needs.metadata.outputs.tag }}-${{ matrix.arch }}
+            ${{ matrix.service == 'api' && needs.metadata.outputs.api_name || needs.metadata.outputs.ui_name }}:latest-${{ matrix.arch }}
+
+  publish:
+    if: >-
+      github.actor != 'github-actions[bot]'
+      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.app == 'true')
+    needs:
+      - changes
+      - metadata
+      - build
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Log in to GHCR
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Create multi-arch image manifests
+        run: |
+          docker buildx imagetools create \
+            -t "${API_IMAGE}:${IMAGE_TAG}" \
+            -t "${API_IMAGE}:latest" \
+            "${API_IMAGE}:${IMAGE_TAG}-amd64" \
+            "${API_IMAGE}:${IMAGE_TAG}-arm64"
+
+          docker buildx imagetools create \
+            -t "${UI_IMAGE}:${IMAGE_TAG}" \
+            -t "${UI_IMAGE}:latest" \
+            "${UI_IMAGE}:${IMAGE_TAG}-amd64" \
+            "${UI_IMAGE}:${IMAGE_TAG}-arm64"
+        env:
+          API_IMAGE: ${{ needs.metadata.outputs.api_name }}
+          UI_IMAGE: ${{ needs.metadata.outputs.ui_name }}
+          IMAGE_TAG: ${{ needs.metadata.outputs.tag }}
 
       - name: Update Kubernetes image tag
         run: |
-          sed -i "s|newName: .*|newName: ${{ steps.image.outputs.name }}|" deploy/k8s/kustomization.yaml
-          sed -i "s|newTag: .*|newTag: ${{ steps.image.outputs.tag }}|" deploy/k8s/kustomization.yaml
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path("deploy/k8s/overlays/argocd/kustomization.yaml")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          images = {
+              "pardon-api": os.environ["API_IMAGE"],
+              "pardon-ui": os.environ["UI_IMAGE"],
+          }
+          tag = os.environ["IMAGE_TAG"]
+
+          current_image = None
+          for index, line in enumerate(lines):
+              stripped = line.strip()
+              if stripped.startswith("- name: "):
+                  current_image = stripped.removeprefix("- name: ")
+              elif current_image in images and stripped.startswith("newName: "):
+                  indent = line[: len(line) - len(line.lstrip())]
+                  lines[index] = f"{indent}newName: {images[current_image]}"
+              elif current_image in images and stripped.startswith("newTag: "):
+                  indent = line[: len(line) - len(line.lstrip())]
+                  lines[index] = f"{indent}newTag: {tag}"
+
+          path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+        env:
+          API_IMAGE: ${{ needs.metadata.outputs.api_name }}
+          UI_IMAGE: ${{ needs.metadata.outputs.ui_name }}
+          IMAGE_TAG: ${{ needs.metadata.outputs.tag }}
 
       - name: Commit updated deployment tag
         run: |
-          if git diff --quiet deploy/k8s/kustomization.yaml; then
+          if git diff --quiet deploy/k8s/overlays/argocd/kustomization.yaml; then
             echo "Deployment tag is already up to date."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add deploy/k8s/kustomization.yaml
+          git add deploy/k8s/overlays/argocd/kustomization.yaml
           git commit -m "Update deployment image tag"
           git push

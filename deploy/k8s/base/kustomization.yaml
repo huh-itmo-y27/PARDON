@@ -5,7 +5,4 @@ resources:
   - configmap.yaml
   - deployment.yaml
   - service.yaml
-images:
-  - name: pardon-app
-    newName: ghcr.io/huh-itmo-y27/pardon
-    newTag: latest
+  - ingress.yaml

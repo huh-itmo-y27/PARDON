@@ -97,6 +97,291 @@
         }
       }
     },
+    "/api/v1/models/available": {
+      "get": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "Available Models",
+        "operationId": "available_models_api_v1_models_available_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/AvailableModel"
+                  },
+                  "type": "array",
+                  "title": "Response Available Models Api V1 Models Available Get"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/datasets/sources": {
+      "get": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "Dataset Sources",
+        "operationId": "dataset_sources_api_v1_datasets_sources_get",
+        "parameters": [
+          {
+            "name": "split",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "val",
+              "title": "Split"
+            }
+          },
+          {
+            "name": "q",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Q"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/DatasetSource"
+                  },
+                  "title": "Response Dataset Sources Api V1 Datasets Sources Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/datasets/records": {
+      "get": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "Dataset Records",
+        "operationId": "dataset_records_api_v1_datasets_records_get",
+        "parameters": [
+          {
+            "name": "split",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "string",
+              "default": "val",
+              "title": "Split"
+            }
+          },
+          {
+            "name": "source_id",
+            "in": "query",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Source Id"
+            }
+          },
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 2000,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PredictRecord"
+                  },
+                  "title": "Response Dataset Records Api V1 Datasets Records Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predictions/runs": {
+      "get": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "Prediction Runs",
+        "operationId": "prediction_runs_api_v1_predictions_runs_get",
+        "parameters": [
+          {
+            "name": "limit",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "maximum": 500,
+              "minimum": 1,
+              "default": 50,
+              "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
+            "name": "model_name",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Model Name"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "type": "array",
+                  "items": {
+                    "$ref": "#/components/schemas/PredictionRunSummary"
+                  },
+                  "title": "Response Prediction Runs Api V1 Predictions Runs Get"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/predictions/runs/{request_id}": {
+      "get": {
+        "tags": [
+          "inference"
+        ],
+        "summary": "Prediction Run Detail",
+        "operationId": "prediction_run_detail_api_v1_predictions_runs__request_id__get",
+        "parameters": [
+          {
+            "name": "request_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Request Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/PredictionRunDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/predictions/recent": {
       "get": {
         "tags": [
@@ -180,15 +465,33 @@
         ],
         "summary": "Retrain",
         "operationId": "retrain_api_v1_retrain_post",
+        "parameters": [
+          {
+            "name": "authorization",
+            "in": "header",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "type": "string"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Authorization"
+            }
+          }
+        ],
         "requestBody": {
+          "required": true,
           "content": {
             "application/json": {
               "schema": {
                 "$ref": "#/components/schemas/RetrainRequest"
               }
             }
-          },
-          "required": true
+          }
         },
         "responses": {
           "200": {
@@ -207,6 +510,35 @@
               "application/json": {
                 "schema": {
                   "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/v1/retrain/active": {
+      "get": {
+        "tags": [
+          "retrain"
+        ],
+        "summary": "Retrain Active",
+        "operationId": "retrain_active_api_v1_retrain_active_get",
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "anyOf": [
+                    {
+                      "$ref": "#/components/schemas/RetrainJobResponse"
+                    },
+                    {
+                      "type": "null"
+                    }
+                  ],
+                  "title": "Response Retrain Active Api V1 Retrain Active Get"
                 }
               }
             }
@@ -277,6 +609,17 @@
             }
           },
           {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
+            }
+          },
+          {
             "name": "model_name",
             "in": "query",
             "required": false,
@@ -321,6 +664,48 @@
         }
       }
     },
+    "/api/v1/experiments/{run_id}": {
+      "get": {
+        "tags": [
+          "experiments"
+        ],
+        "summary": "Experiment Detail",
+        "operationId": "experiment_detail_api_v1_experiments__run_id__get",
+        "parameters": [
+          {
+            "name": "run_id",
+            "in": "path",
+            "required": true,
+            "schema": {
+              "type": "string",
+              "title": "Run Id"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Successful Response",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ExperimentDetail"
+                }
+              }
+            }
+          },
+          "422": {
+            "description": "Validation Error",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
     "/api/v1/notifications/drift": {
       "get": {
         "tags": [
@@ -339,6 +724,17 @@
               "minimum": 1,
               "default": 50,
               "title": "Limit"
+            }
+          },
+          {
+            "name": "offset",
+            "in": "query",
+            "required": false,
+            "schema": {
+              "type": "integer",
+              "minimum": 0,
+              "default": 0,
+              "title": "Offset"
             }
           },
           {
@@ -429,6 +825,42 @@
   },
   "components": {
     "schemas": {
+      "AvailableModel": {
+        "properties": {
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          }
+        },
+        "type": "object",
+        "required": [
+          "model_name"
+        ],
+        "title": "AvailableModel"
+      },
+      "DatasetSource": {
+        "properties": {
+          "split": {
+            "type": "string",
+            "title": "Split"
+          },
+          "source_id": {
+            "type": "string",
+            "title": "Source Id"
+          },
+          "rows_count": {
+            "type": "integer",
+            "title": "Rows Count"
+          }
+        },
+        "type": "object",
+        "required": [
+          "split",
+          "source_id",
+          "rows_count"
+        ],
+        "title": "DatasetSource"
+      },
       "DriftNotification": {
         "properties": {
           "id": {
@@ -467,6 +899,70 @@
           "read"
         ],
         "title": "DriftNotification"
+      },
+      "ExperimentDetail": {
+        "properties": {
+          "run_id": {
+            "type": "string",
+            "title": "Run Id"
+          },
+          "experiment": {
+            "type": "string",
+            "title": "Experiment"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "status": {
+            "type": "string",
+            "title": "Status"
+          },
+          "started_at": {
+            "anyOf": [
+              {
+                "type": "string",
+                "format": "date-time"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Started At"
+          },
+          "metrics": {
+            "additionalProperties": {
+              "type": "number"
+            },
+            "type": "object",
+            "title": "Metrics"
+          },
+          "params": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Params"
+          },
+          "tags": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object",
+            "title": "Tags"
+          }
+        },
+        "type": "object",
+        "required": [
+          "run_id",
+          "experiment",
+          "model_name",
+          "status",
+          "started_at",
+          "metrics",
+          "params"
+        ],
+        "title": "ExperimentDetail"
       },
       "ExperimentItem": {
         "properties": {
@@ -654,6 +1150,112 @@
           "anomaly_flag"
         ],
         "title": "PredictionItem"
+      },
+      "PredictionRunDetail": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "records_count": {
+            "type": "integer",
+            "title": "Records Count"
+          },
+          "anomalies_count": {
+            "type": "integer",
+            "title": "Anomalies Count"
+          },
+          "anomaly_rate": {
+            "type": "number",
+            "title": "Anomaly Rate"
+          },
+          "avg_score": {
+            "type": "number",
+            "title": "Avg Score"
+          },
+          "max_score": {
+            "type": "number",
+            "title": "Max Score"
+          },
+          "rows": {
+            "items": {
+              "$ref": "#/components/schemas/RecentPrediction"
+            },
+            "type": "array",
+            "title": "Rows"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "model_name",
+          "created_at",
+          "records_count",
+          "anomalies_count",
+          "anomaly_rate",
+          "avg_score",
+          "max_score",
+          "rows"
+        ],
+        "title": "PredictionRunDetail"
+      },
+      "PredictionRunSummary": {
+        "properties": {
+          "request_id": {
+            "type": "string",
+            "title": "Request Id"
+          },
+          "model_name": {
+            "type": "string",
+            "title": "Model Name"
+          },
+          "created_at": {
+            "type": "string",
+            "format": "date-time",
+            "title": "Created At"
+          },
+          "records_count": {
+            "type": "integer",
+            "title": "Records Count"
+          },
+          "anomalies_count": {
+            "type": "integer",
+            "title": "Anomalies Count"
+          },
+          "anomaly_rate": {
+            "type": "number",
+            "title": "Anomaly Rate"
+          },
+          "avg_score": {
+            "type": "number",
+            "title": "Avg Score"
+          },
+          "max_score": {
+            "type": "number",
+            "title": "Max Score"
+          }
+        },
+        "type": "object",
+        "required": [
+          "request_id",
+          "model_name",
+          "created_at",
+          "records_count",
+          "anomalies_count",
+          "anomaly_rate",
+          "avg_score",
+          "max_score"
+        ],
+        "title": "PredictionRunSummary"
       },
       "RecentPrediction": {
         "properties": {

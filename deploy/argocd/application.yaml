@@ -8,7 +8,7 @@ spec:
   source:
     repoURL: https://github.com/huh-itmo-y27/PARDON
     targetRevision: main
-    path: deploy/k8s
+    path: deploy/k8s/overlays/argocd
   destination:
     server: https://kubernetes.default.svc
     namespace: pardon

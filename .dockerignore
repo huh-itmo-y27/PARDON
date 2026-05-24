@@ -5,11 +5,24 @@
 .venv
 __pycache__
 *.pyc
+*.tsbuildinfo
 
 data
 mlruns
 notebooks
 reports
+figures
+SKAB
+deploy
+docs
+monitoring
+tests
+docs/site
+site
+
+services/ui/node_modules
+services/ui/.next
+services/ui/.turbo
 
 .env
 .env.*
