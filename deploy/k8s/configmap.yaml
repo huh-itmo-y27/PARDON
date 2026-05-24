@@ -4,7 +4,12 @@ metadata:
   name: pardon-config
   namespace: pardon
 data:
-  MLFLOW_TRACKING_URI: "file:/app/mlruns"
-  MLFLOW_EXPERIMENT_NAME: "anomaly_detection"
-  MLFLOW_INFERENCE_EXPERIMENT_NAME: "anomaly_detection_inference"
-  MONITORING_EXPORTER_PORT: "8010"
+  API_TITLE: "PARDON Anomaly API"
+  API_VERSION: "0.1.0"
+  API_DEFAULT_MODEL: "isolation_forest"
+  PARDON_DATABASE_URL: "postgresql+psycopg://pardon:pardon@pardon-postgres:5432/pardon"
+  PARDON_RETRAIN_AUTH_ENABLED: "false"
+  PARDON_RETRAIN_BEARER_TOKEN: ""
+  PARDON_CORS_ALLOWED_ORIGINS: "http://pardon.local"
+  NEXT_PUBLIC_API_BASE_URL: "http://pardon.local"
+  NEXT_PUBLIC_RETRAIN_API_TOKEN: ""

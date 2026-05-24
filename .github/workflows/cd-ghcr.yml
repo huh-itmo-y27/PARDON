@@ -1,4 +1,4 @@
-name: Build and Publish Image
+name: Build and Publish App Images
 
 on:
   workflow_dispatch:
@@ -11,7 +11,7 @@ on:
       - "README.md"
 
 permissions:
-  contents: read
+  contents: write
   packages: write
 
 jobs:
@@ -28,9 +28,10 @@ jobs:
       - name: Prepare image metadata
         id: image
         run: |
-          image_name="ghcr.io/${GITHUB_REPOSITORY,,}"
+          image_base="ghcr.io/${GITHUB_REPOSITORY,,}"
           image_tag="${GITHUB_SHA::12}"
-          echo "name=${image_name}" >> "$GITHUB_OUTPUT"
+          echo "api_name=${image_base}/api" >> "$GITHUB_OUTPUT"
+          echo "ui_name=${image_base}/ui" >> "$GITHUB_OUTPUT"
           echo "tag=${image_tag}" >> "$GITHUB_OUTPUT"
 
       - name: Log in to GHCR
@@ -46,20 +47,62 @@ jobs:
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
-      - name: Build and push Docker image
+      - name: Build and push API image
         uses: docker/build-push-action@v6
         with:
           context: .
+          file: services/api/Dockerfile
           platforms: linux/amd64,linux/arm64
           push: true
           tags: |
-            ${{ steps.image.outputs.name }}:${{ steps.image.outputs.tag }}
-            ${{ steps.image.outputs.name }}:latest
+            ${{ steps.image.outputs.api_name }}:${{ steps.image.outputs.tag }}
+            ${{ steps.image.outputs.api_name }}:latest
+
+      - name: Build and push UI image
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: services/ui/Dockerfile
+          platforms: linux/amd64,linux/arm64
+          push: true
+          build-args: |
+            NEXT_PUBLIC_API_BASE_URL=http://pardon.local
+          tags: |
+            ${{ steps.image.outputs.ui_name }}:${{ steps.image.outputs.tag }}
+            ${{ steps.image.outputs.ui_name }}:latest
 
       - name: Update Kubernetes image tag
         run: |
-          sed -i "s|newName: .*|newName: ${{ steps.image.outputs.name }}|" deploy/k8s/kustomization.yaml
-          sed -i "s|newTag: .*|newTag: ${{ steps.image.outputs.tag }}|" deploy/k8s/kustomization.yaml
+          python - <<'PY'
+          import os
+          from pathlib import Path
+
+          path = Path("deploy/k8s/kustomization.yaml")
+          lines = path.read_text(encoding="utf-8").splitlines()
+          images = {
+              "pardon-api": os.environ["API_IMAGE"],
+              "pardon-ui": os.environ["UI_IMAGE"],
+          }
+          tag = os.environ["IMAGE_TAG"]
+
+          current_image = None
+          for index, line in enumerate(lines):
+              stripped = line.strip()
+              if stripped.startswith("- name: "):
+                  current_image = stripped.removeprefix("- name: ")
+              elif current_image in images and stripped.startswith("newName: "):
+                  indent = line[: len(line) - len(line.lstrip())]
+                  lines[index] = f"{indent}newName: {images[current_image]}"
+              elif current_image in images and stripped.startswith("newTag: "):
+                  indent = line[: len(line) - len(line.lstrip())]
+                  lines[index] = f"{indent}newTag: {tag}"
+
+          path.write_text("\n".join(lines) + "\n", encoding="utf-8")
+          PY
+        env:
+          API_IMAGE: ${{ steps.image.outputs.api_name }}
+          UI_IMAGE: ${{ steps.image.outputs.ui_name }}
+          IMAGE_TAG: ${{ steps.image.outputs.tag }}
 
       - name: Commit updated deployment tag
         run: |
