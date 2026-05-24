@@ -6,7 +6,7 @@ on:
     branches:
       - main
     paths-ignore:
-      - "deploy/k8s/kustomization.yaml"
+      - "deploy/k8s/overlays/argocd/kustomization.yaml"
       - "docs/**"
       - "README.md"
 
@@ -55,9 +55,11 @@ jobs:
         run: |
           image_base="ghcr.io/${GITHUB_REPOSITORY,,}"
           image_tag="${GITHUB_SHA::12}"
-          echo "api_name=${image_base}/api" >> "$GITHUB_OUTPUT"
-          echo "ui_name=${image_base}/ui" >> "$GITHUB_OUTPUT"
-          echo "tag=${image_tag}" >> "$GITHUB_OUTPUT"
+          {
+            echo "api_name=${image_base}/api"
+            echo "ui_name=${image_base}/ui"
+            echo "tag=${image_tag}"
+          } >> "$GITHUB_OUTPUT"
 
   build:
     if: >-
@@ -180,7 +182,7 @@ jobs:
           import os
           from pathlib import Path
 
-          path = Path("deploy/k8s/kustomization.yaml")
+          path = Path("deploy/k8s/overlays/argocd/kustomization.yaml")
           lines = path.read_text(encoding="utf-8").splitlines()
           images = {
               "pardon-api": os.environ["API_IMAGE"],
@@ -209,13 +211,13 @@ jobs:
 
       - name: Commit updated deployment tag
         run: |
-          if git diff --quiet deploy/k8s/kustomization.yaml; then
+          if git diff --quiet deploy/k8s/overlays/argocd/kustomization.yaml; then
             echo "Deployment tag is already up to date."
             exit 0
           fi
 
           git config user.name "github-actions[bot]"
           git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
-          git add deploy/k8s/kustomization.yaml
+          git add deploy/k8s/overlays/argocd/kustomization.yaml
           git commit -m "Update deployment image tag"
           git push

@@ -252,12 +252,7 @@ k8s_minikube_up:
 ## Deploy Kubernetes manifests to minikube
 .PHONY: k8s_deploy
 k8s_deploy:
-	kubectl apply -f deploy/k8s/minikube/namespace.yaml
-	kubectl apply -f deploy/k8s/minikube/configmap.yaml
-	kubectl apply -f deploy/k8s/minikube/postgres.yaml
-	kubectl apply -f deploy/k8s/minikube/api-deployment.yaml
-	kubectl apply -f deploy/k8s/minikube/ui-deployment.yaml
-	kubectl apply -f deploy/k8s/minikube/ingress.yaml
+	kubectl apply -k deploy/k8s/overlays/minikube
 
 ## Show Kubernetes resource status
 .PHONY: k8s_status

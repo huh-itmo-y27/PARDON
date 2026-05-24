@@ -1,8 +1,8 @@
 # Continuous Delivery with Argo CD
 
 This project is deployed to Kubernetes as the PARDON WebUI application.
-Argo CD watches the Kubernetes manifests in `deploy/k8s` and keeps the
-cluster state synchronized with Git.
+Argo CD watches the `deploy/k8s/overlays/argocd` Kustomize overlay and keeps
+the cluster state synchronized with Git.
 
 ## What is deployed
 
@@ -20,12 +20,18 @@ deploy/
   argocd/
     application.yaml
   k8s/
-    namespace.yaml
-    configmap.yaml
-    deployment.yaml
-    ingress.yaml
-    service.yaml
-    kustomization.yaml
+    base/
+      namespace.yaml
+      configmap.yaml
+      deployment.yaml
+      ingress.yaml
+      service.yaml
+      kustomization.yaml
+    overlays/
+      argocd/
+        kustomization.yaml
+      minikube/
+        kustomization.yaml
 ```
 
 ## CD flow
@@ -33,7 +39,7 @@ deploy/
 1. A change is pushed to `main`.
 2. GitHub Actions builds the API and UI Docker images.
 3. Both images are pushed to GHCR with two tags: `latest` and the short commit SHA.
-4. The workflow updates `deploy/k8s/kustomization.yaml` with the new image tags.
+4. The workflow updates `deploy/k8s/overlays/argocd/kustomization.yaml` with the new image tags.
 5. Argo CD detects the Git change and syncs the Kubernetes deployments.
 
 ## One-time GitHub setup
