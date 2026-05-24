@@ -15,8 +15,35 @@ permissions:
   packages: write
 
 jobs:
-  metadata:
+  changes:
     if: github.actor != 'github-actions[bot]'
+    runs-on: ubuntu-latest
+    outputs:
+      app: ${{ steps.filter.outputs.app }}
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Detect app build changes
+        uses: dorny/paths-filter@v3
+        id: filter
+        with:
+          filters: |
+            app:
+              - ".dockerignore"
+              - ".github/workflows/cd-ghcr.yml"
+              - "alembic.ini"
+              - "anomaly_detection/**"
+              - "pyproject.toml"
+              - "services/api/**"
+              - "services/ui/**"
+              - "uv.lock"
+
+  metadata:
+    if: >-
+      github.actor != 'github-actions[bot]'
+      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.app == 'true')
+    needs: changes
     runs-on: ubuntu-latest
     outputs:
       api_name: ${{ steps.image.outputs.api_name }}
@@ -33,8 +60,12 @@ jobs:
           echo "tag=${image_tag}" >> "$GITHUB_OUTPUT"
 
   build:
-    if: github.actor != 'github-actions[bot]'
-    needs: metadata
+    if: >-
+      github.actor != 'github-actions[bot]'
+      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.app == 'true')
+    needs:
+      - changes
+      - metadata
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -100,8 +131,11 @@ jobs:
             ${{ matrix.service == 'api' && needs.metadata.outputs.api_name || needs.metadata.outputs.ui_name }}:latest-${{ matrix.arch }}
 
   publish:
-    if: github.actor != 'github-actions[bot]'
+    if: >-
+      github.actor != 'github-actions[bot]'
+      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.app == 'true')
     needs:
+      - changes
       - metadata
       - build
     runs-on: ubuntu-latest
