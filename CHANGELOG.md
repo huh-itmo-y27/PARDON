@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/huh-itmo-y27/PARDON/compare/v0.1.2...v0.1.3) (2026-05-30)
+
+
+### Bug Fixes
+
+* **cd:** dockerfile ([#25](https://github.com/huh-itmo-y27/PARDON/issues/25)) ([094c3e2](https://github.com/huh-itmo-y27/PARDON/commit/094c3e2d5f7009de9f5ae170e2005ff8e1c1335b))
+
 ## [0.1.2](https://github.com/huh-itmo-y27/PARDON/compare/v0.1.1...v0.1.2) (2026-05-30)
 
 
