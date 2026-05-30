@@ -1,6 +1,6 @@
 [project]
 name = "pumps_anomaly_detection"
-version = "0.1.1"
+version = "0.1.2"
 description = "A short description of the project."
 authors = [
   { name = "Roman Kuklo, George Lopatenko" },

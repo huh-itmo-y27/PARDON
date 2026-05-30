@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/huh-itmo-y27/PARDON/compare/v0.1.1...v0.1.2) (2026-05-30)
+
+
+### Bug Fixes
+
+* **cd:** fix bugs with .toml release ([#23](https://github.com/huh-itmo-y27/PARDON/issues/23)) ([0afa695](https://github.com/huh-itmo-y27/PARDON/commit/0afa695935d2d98379a408da049b2e5b45c6d9fd))
+
 ## [0.1.1](https://github.com/huh-itmo-y27/PARDON/compare/v0.1.0...v0.1.1) (2026-05-30)
 
 
