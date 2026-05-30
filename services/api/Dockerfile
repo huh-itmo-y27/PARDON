@@ -15,11 +15,11 @@ RUN pip install --no-cache-dir uv
 
 COPY pyproject.toml uv.lock* README.md LICENSE ./
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev --no-install-project
+    uv sync --no-dev --no-install-project
 
 COPY . .
 RUN --mount=type=cache,target=/root/.cache/uv \
-    uv sync --frozen --no-dev
+    uv sync --no-dev
 
 ENV PATH="/app/.venv/bin:$PATH"
 EXPOSE 8000
