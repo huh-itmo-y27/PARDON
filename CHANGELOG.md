@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.1](https://github.com/huh-itmo-y27/PARDON/compare/v0.1.0...v0.1.1) (2026-05-30)
+
+
+### Bug Fixes
+
+* clarify quick start documentation ([#21](https://github.com/huh-itmo-y27/PARDON/issues/21)) ([8a63146](https://github.com/huh-itmo-y27/PARDON/commit/8a63146549cf3809ce2ffece9bf5beca4cc364fe))
+
 ## [0.1.0](https://github.com/huh-itmo-y27/PARDON/compare/v0.0.1...v0.1.0) (2026-05-30)
 
 
