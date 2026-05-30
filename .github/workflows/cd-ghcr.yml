@@ -21,9 +21,12 @@ jobs:
     runs-on: ubuntu-latest
     outputs:
       app: ${{ steps.filter.outputs.app }}
+      release_only: ${{ steps.release-only.outputs.release_only }}
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
 
       - name: Detect app build changes
         uses: dorny/paths-filter@v3
@@ -40,10 +43,61 @@ jobs:
               - "services/ui/**"
               - "uv.lock"
 
+      - name: Detect release-only changes
+        id: release-only
+        run: |
+          python - <<'PY'
+          import os
+          from pathlib import Path
+          import re
+          import subprocess
+
+          def write_output(value: bool) -> None:
+              with Path(os.environ["GITHUB_OUTPUT"]).open("a", encoding="utf-8") as output:
+                  output.write(f"release_only={str(value).lower()}\n")
+
+          try:
+              changed_files = subprocess.check_output(
+                  ["git", "diff", "--name-only", "HEAD^", "HEAD"],
+                  text=True,
+              ).splitlines()
+          except subprocess.CalledProcessError:
+              write_output(False)
+              raise SystemExit(0)
+
+          allowed_files = {
+              ".release-please-manifest.json",
+              "CHANGELOG.md",
+              "pyproject.toml",
+          }
+          release_only = bool(changed_files) and all(
+              path in allowed_files for path in changed_files
+          )
+
+          if release_only and "pyproject.toml" in changed_files:
+              diff = subprocess.check_output(
+                  ["git", "diff", "-U0", "HEAD^", "HEAD", "--", "pyproject.toml"],
+                  text=True,
+              )
+              changed_lines = [
+                  line
+                  for line in diff.splitlines()
+                  if line.startswith(("+", "-"))
+                  and not line.startswith(("+++", "---"))
+              ]
+              release_only = all(
+                  re.match(r'^[+-]version = "[^"]+"$', line)
+                  for line in changed_lines
+              )
+
+          write_output(release_only)
+          PY
+
   metadata:
     if: >-
       github.actor != 'github-actions[bot]'
-      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.app == 'true')
+      && (github.event_name == 'workflow_dispatch'
+        || (needs.changes.outputs.app == 'true' && needs.changes.outputs.release_only != 'true'))
     needs: changes
     runs-on: ubuntu-latest
     outputs:
@@ -65,7 +119,8 @@ jobs:
   build:
     if: >-
       github.actor != 'github-actions[bot]'
-      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.app == 'true')
+      && (github.event_name == 'workflow_dispatch'
+        || (needs.changes.outputs.app == 'true' && needs.changes.outputs.release_only != 'true'))
     needs:
       - changes
       - metadata
@@ -136,7 +191,8 @@ jobs:
   publish:
     if: >-
       github.actor != 'github-actions[bot]'
-      && (github.event_name == 'workflow_dispatch' || needs.changes.outputs.app == 'true')
+      && (github.event_name == 'workflow_dispatch'
+        || (needs.changes.outputs.app == 'true' && needs.changes.outputs.release_only != 'true'))
     needs:
       - changes
       - metadata
