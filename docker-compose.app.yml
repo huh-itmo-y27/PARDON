@@ -32,6 +32,7 @@ services:
       - PARDON_CORS_ALLOWED_ORIGINS=${PARDON_CORS_ALLOWED_ORIGINS:-http://localhost:3001}
     volumes:
       - .:/app
+      - pardon_api_venv:/app/.venv
     ports:
       - "8000:8000"
     depends_on:
@@ -50,10 +51,10 @@ services:
     build:
       context: .
       dockerfile: services/ui/Dockerfile
+      args:
+        NEXT_PUBLIC_API_BASE_URL: "http://api:8000"
+        NEXT_PUBLIC_RETRAIN_API_TOKEN: "${NEXT_PUBLIC_RETRAIN_API_TOKEN-}"
     container_name: pardon_ui
-    environment:
-      - NEXT_PUBLIC_API_BASE_URL=http://api:8000
-      - NEXT_PUBLIC_RETRAIN_API_TOKEN=${NEXT_PUBLIC_RETRAIN_API_TOKEN:-}
     ports:
       - "3001:3001"
     depends_on:
@@ -62,4 +63,5 @@ services:
 
 volumes:
   pardon_postgres_data:
+  pardon_api_venv:
 
