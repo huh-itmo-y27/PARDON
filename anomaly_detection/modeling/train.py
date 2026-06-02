@@ -8,7 +8,13 @@ import time
 from loguru import logger
 import numpy as np
 import pandas as pd
-from sklearn.metrics import f1_score, precision_score, recall_score
+from sklearn.metrics import (
+    precision_score,
+    recall_score,
+    f1_score,
+    fbeta_score,
+    average_precision_score,
+)
 import typer
 
 from anomaly_detection.config import (
@@ -102,6 +108,95 @@ def compute_nab_metrics(
         "low_fp": float(results.get("LowFP", 0.0)),
         "low_fn": float(results.get("LowFN", 0.0)),
     }
+
+
+def extract_events(labels: np.ndarray, min_event_size: int = 1) -> list[tuple[int, int]]:
+    events = []
+    start = None
+    for i, value in enumerate(labels):
+        if value == 1 and start is None:
+            start = i
+        elif value == 0 and start is not None:
+            if i - start >= min_event_size:
+                events.append((start, i - 1))
+            start = None
+    if start is not None:
+        if len(labels) - start >= min_event_size:
+            events.append((start, len(labels) - 1))
+    return events
+
+
+def compute_event_recall(y_true: np.ndarray, y_pred: np.ndarray, min_event_size: int = 1) -> dict[str, float]:
+    true_events = extract_events(y_true, min_event_size=min_event_size)
+    if len(true_events) == 0:
+        return {"event_recall": np.nan, "detected_events": 0, "total_events": 0}
+    detected = 0
+    for start, end in true_events:
+        if np.any(y_pred[start:end + 1] == 1):
+            detected += 1
+    return {"event_recall": float(detected / len(true_events)), "detected_events": int(detected),
+            "total_events": int(len(true_events))}
+
+
+def compute_false_alarms_per_day(y_true: np.ndarray, y_pred: np.ndarray, timestamps: pd.Series,
+                                 merge_gap_minutes: float = 5.0) -> dict[str, float]:
+    timestamps = pd.Series(pd.to_datetime(timestamps))
+    fp_mask = (y_pred == 1) & (y_true == 0)
+    fp_idx = np.where(fp_mask)[0]
+    if len(fp_idx) == 0:
+        return {"false_alarm_events": 0, "false_alarms_per_day": 0.0}
+    num_events = 1
+    for prev_idx, cur_idx in zip(fp_idx[:-1], fp_idx[1:]):
+        delta_minutes = (timestamps.iloc[cur_idx] - timestamps.iloc[prev_idx]).total_seconds() / 60.0
+        if delta_minutes > merge_gap_minutes:
+            num_events += 1
+    normal_mask = (y_true == 0)
+    if normal_mask.sum() == 0:
+        return {"false_alarm_events": num_events, "false_alarms_per_day": np.nan}
+    normal_hours = normal_mask.sum() * (timestamps.diff().median().total_seconds() / 3600.0)
+    if normal_hours <= 0:
+        return {"false_alarm_events": num_events, "false_alarms_per_day": np.nan}
+    return {"false_alarm_events": int(num_events), "false_alarms_per_day": float(num_events * 24.0 / normal_hours)}
+
+
+def compute_extended_metrics(y_true: np.ndarray, y_pred: np.ndarray, y_scores: np.ndarray,
+                             timestamps: pd.Series | None = None) -> dict[str, float]:
+    metrics = {}
+    try:
+        metrics["pr_auc"] = float(average_precision_score(y_true, y_scores))
+    except Exception:
+        metrics["pr_auc"] = np.nan
+    metrics.update(compute_event_recall(y_true, y_pred))
+    if timestamps is not None:
+        metrics.update(compute_false_alarms_per_day(y_true, y_pred, timestamps))
+    return metrics
+
+
+def threshold_sweep(y_true: np.ndarray, y_scores: np.ndarray, train_scores: np.ndarray,
+                    timestamps: pd.Series | None = None, quantiles: list[float] | None = None) -> dict:
+    if quantiles is None:
+        quantiles = [0.85, 0.90, 0.95, 0.98, 0.99]
+    results = {"threshold": {}, "precision": {}, "recall": {}, "f1": {}, "f2": {}, "event_recall": {},
+               "false_alarms_per_day": {}, "alert_rate": {}}
+    for q in quantiles:
+        threshold = float(np.quantile(train_scores, q))
+        y_pred = (y_scores > threshold).astype(int)
+        results["threshold"][q] = threshold
+        results["precision"][q] = float(precision_score(y_true, y_pred, zero_division=0))
+        results["recall"][q] = float(recall_score(y_true, y_pred, zero_division=0))
+        results["f1"][q] = float(f1_score(y_true, y_pred, zero_division=0))
+        results["f2"][q] = float(fbeta_score(y_true, y_pred, beta=2, zero_division=0))
+        results["alert_rate"][q] = float(y_pred.mean())
+        event_metrics = compute_event_recall(y_true, y_pred)
+        results["event_recall"][q] = event_metrics["event_recall"]
+        if timestamps is not None:
+            fp_metrics = compute_false_alarms_per_day(y_true, y_pred, timestamps)
+            results["false_alarms_per_day"][q] = fp_metrics["false_alarms_per_day"]
+    try:
+        results["pr_auc"] = float(average_precision_score(y_true, y_scores))
+    except Exception:
+        results["pr_auc"] = np.nan
+    return results
 
 
 def resolve_run_name(
@@ -218,6 +313,17 @@ def main(
     except Exception as exc:
         logger.warning("NAB metrics were not computed: {}", exc)
 
+    event_metrics = compute_event_recall(y_eval, eval_pred)
+    fp_metrics = compute_false_alarms_per_day(
+        y_eval, eval_pred, eval_df["datetime"]
+    )
+    extended_metrics = compute_extended_metrics(
+        y_eval, eval_pred, eval_scores, eval_df["datetime"]
+    )
+    sweep_results = threshold_sweep(
+        y_eval, eval_scores, train_scores, eval_df["datetime"]
+    )
+
     model_dir = output_dir / model_name
     model.save(model_dir)
     label_cols = [LABEL_COL, "changepoint"]
@@ -251,6 +357,25 @@ def main(
         "metrics_point": point_metrics,
         "metrics_changepoint": cp_metrics,
         "metrics_nab": nab_metrics,
+        "metrics_event": event_metrics,
+        "metrics_false_alarms": fp_metrics,
+        "metrics_extended": extended_metrics,
+        "metrics_threshold_sweep": {
+            "pr_auc": sweep_results["pr_auc"],
+            "quantiles": {
+                q: {
+                    "threshold": sweep_results["threshold"][q],
+                    "precision": sweep_results["precision"][q],
+                    "recall": sweep_results["recall"][q],
+                    "f1": sweep_results["f1"][q],
+                    "f2": sweep_results["f2"][q],
+                    "event_recall": sweep_results["event_recall"][q],
+                    "false_alarms_per_day": sweep_results["false_alarms_per_day"][q],
+                    "alert_rate": sweep_results["alert_rate"][q],
+                }
+                for q in sweep_results["threshold"]
+            },
+        },
         "dataset_scenario": dataset_scenario,
         "drift_reference": drift_reference,
         "drift_eval": {
@@ -332,6 +457,15 @@ def main(
             "Validation NAB LowFN score.",
             nab_metrics["low_fn"],
         )
+
+    if not np.isnan(event_metrics["event_recall"]):
+        emitter.gauge("anomaly_pipeline_event_recall", "Event-based recall.", event_metrics["event_recall"])
+    emitter.gauge("anomaly_pipeline_false_alarms_per_day", "False alarms per day.", fp_metrics["false_alarms_per_day"])
+    if not np.isnan(extended_metrics["pr_auc"]):
+        emitter.gauge("anomaly_pipeline_pr_auc", "PR AUC score.", extended_metrics["pr_auc"])
+    if not np.isnan(sweep_results["pr_auc"]):
+        emitter.gauge("anomaly_pipeline_sweep_pr_auc", "Threshold sweep PR AUC.", sweep_results["pr_auc"])
+
     emitter.gauge(
         "anomaly_pipeline_data_drift_score",
         "Aggregate data drift score.",
@@ -397,6 +531,22 @@ def main(
                         "val_nab_low_fn": nab_metrics["low_fn"],
                     }
                 )
+            if event_metrics is not None and not np.isnan(event_metrics.get("event_recall", np.nan)):
+                metrics_payload.update({
+                    "event_recall": event_metrics["event_recall"],
+                    "detected_events": float(event_metrics["detected_events"]),
+                    "total_events": float(event_metrics["total_events"]),
+                })
+            if fp_metrics is not None and not np.isnan(fp_metrics.get("false_alarms_per_day", np.nan)):
+                metrics_payload.update({
+                    "false_alarm_events": float(fp_metrics["false_alarm_events"]),
+                    "false_alarms_per_day": fp_metrics["false_alarms_per_day"],
+                })
+            if extended_metrics is not None and not np.isnan(extended_metrics.get("pr_auc", np.nan)):
+                metrics_payload.update({"pr_auc": extended_metrics["pr_auc"]})
+            if sweep_results is not None and not np.isnan(sweep_results.get("pr_auc", np.nan)):
+                metrics_payload.update({"sweep_pr_auc": sweep_results["pr_auc"]})
+
             metrics_payload.update(
                 {
                     "train_data_drift_score": float(
@@ -444,7 +594,6 @@ def main(
         point_metrics["f1"],
         threshold,
     )
-
 
 if __name__ == "__main__":
     app()
