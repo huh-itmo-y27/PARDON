@@ -1,8 +1,8 @@
 # Continuous Delivery with Argo CD
 
-This project is deployed to Kubernetes as the PARDON WebUI application.
+This project is deployed to Kubernetes as PARDON API + UI services.
 Argo CD watches the `deploy/k8s/overlays/argocd` Kustomize overlay and keeps
-the cluster state synchronized with Git.
+cluster state synchronized with Git.
 
 ## What is deployed
 
@@ -38,9 +38,10 @@ deploy/
 
 1. A change is pushed to `main`.
 2. GitHub Actions builds the API and UI Docker images.
-3. Both images are pushed to GHCR with two tags: `latest` and the short commit SHA.
+3. Both images are pushed to GHCR with two tags: `latest` and short commit SHA.
 4. The workflow creates or updates the `Update deployment image tag` pull request.
-5. That pull request updates `deploy/k8s/overlays/argocd/kustomization.yaml` with the short commit SHA tag.
+5. That pull request updates
+  `deploy/k8s/overlays/argocd/kustomization.yaml` with immutable short SHA tags.
 6. After the pull request is merged, Argo CD detects the Git change and syncs the Kubernetes deployments.
 
 The workflow does not push directly to `main`. Repository rules require changes
@@ -60,9 +61,9 @@ and the `version` field in `pyproject.toml`.
 In the GitHub repository settings:
 
 1. Allow GitHub Actions to open pull requests:
-   `Settings -> Actions -> General -> Workflow permissions -> Allow GitHub Actions to create and approve pull requests`.
+  `Settings -> Actions -> General -> Workflow permissions -> Allow GitHub Actions to create and approve pull requests`.
 2. After the first image is published to GHCR, make the package public if you do
-   not want to configure Kubernetes image pull secrets.
+  not want to configure Kubernetes image pull secrets.
 
 ## Start Minikube
 
@@ -75,8 +76,16 @@ kubectl get nodes
 
 ```bash
 kubectl create namespace argocd
-kubectl apply -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
+kubectl apply --server-side -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 kubectl wait --for=condition=available --timeout=300s deployment/argocd-server -n argocd
+```
+
+If you hit CRD annotation-size errors such as
+`metadata.annotations: Too long`, use server-side apply as above.
+If conflicts appear, retry with:
+
+```bash
+kubectl apply --server-side --force-conflicts -n argocd -f https://raw.githubusercontent.com/argoproj/argo-cd/stable/manifests/install.yaml
 ```
 
 If you use the `pardon.local` ingress locally, point it to Minikube:
@@ -100,6 +109,12 @@ kubectl -n pardon rollout status deployment/pardon-api
 kubectl -n pardon rollout status deployment/pardon-ui
 ```
 
+You can also inspect sync state directly:
+
+```bash
+kubectl -n argocd describe applications.argoproj.io pardon
+```
+
 ## Open Argo CD UI
 
 ```bash
@@ -111,6 +126,7 @@ Open `https://localhost:8080`.
 Get the initial admin password:
 
 ```bash
+# brew install argocd
 argocd admin initial-password -n argocd
 ```
 
@@ -148,8 +164,72 @@ kubectl -n pardon exec deploy/pardon-ui -- wget -qO- http://127.0.0.1:3001/healt
 kubectl -n argocd describe applications.argoproj.io pardon
 ```
 
-If the pod has `ImagePullBackOff`, check that the GHCR package is public or
-configure an `imagePullSecret` for `ghcr.io`.
+## Common failure modes
+
+### Argo CD application is OutOfSync
+
+- Verify `spec.source.path` points to expected overlay in
+`deploy/argocd/application.yaml`
+- Confirm target branch (`targetRevision`) contains merged image-tag update PR
+- Trigger manual sync from Argo CD UI or CLI if auto-sync is paused
+
+### Rollout does not become ready
+
+- Check deployment events and container logs:
+  - `kubectl -n pardon describe deployment/pardon-api`
+  - `kubectl -n pardon logs deployment/pardon-api`
+  - `kubectl -n pardon logs deployment/pardon-ui`
+- Verify API health endpoint returns 200:
+`kubectl -n pardon port-forward svc/pardon-api 8000:8000`
+then `curl http://localhost:8000/healthz`
+
+### ImagePullBackOff
+
+- Confirm GHCR package visibility or create `imagePullSecret` for `ghcr.io`
+- Confirm overlay points to existing immutable image tags
+- Recheck image names in `deploy/k8s/overlays/argocd/kustomization.yaml`
+
+### Argo CD application is `Unknown` and namespace is not created
+
+Check application condition:
+
+```bash
+kubectl -n argocd describe applications.argoproj.io pardon
+```
+
+If message contains `ComparisonError` and repo/redis connectivity issues,
+inspect Argo control plane:
+
+```bash
+kubectl -n argocd get pods
+kubectl -n argocd logs statefulset/argocd-application-controller --tail=120
+kubectl -n argocd logs deployment/argocd-repo-server --tail=120
+```
+
+When Argo recovers, status should move to `Synced` and `pardon` namespace is
+created automatically (`CreateNamespace=true` in Application sync options).
+
+### `argocd-redis` is `ImagePullBackOff` (public.ecr.aws unreachable)
+
+Symptom:
+
+- `argocd-redis` stuck in `ImagePullBackOff`
+- `repo-server`/`application-controller` logs show Redis connection refused
+
+Quick workaround (switch Redis image to Docker Hub):
+
+```bash
+kubectl -n argocd set image deployment/argocd-redis redis=redis:8.2.3-alpine
+kubectl -n argocd rollout status deployment/argocd-redis
+```
+
+Then re-check:
+
+```bash
+kubectl -n argocd get applications.argoproj.io pardon
+kubectl get ns pardon
+kubectl -n pardon get pods,svc
+```
 
 The UI uses `API_BASE_URL` for server-side rendering inside Kubernetes. In the
 Argo CD overlay this points to the internal API service:

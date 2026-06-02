@@ -1,15 +1,23 @@
 # Serving Platform
 
-## Local stack (FastAPI + Next.js)
+This guide explains how to run and validate the FastAPI + Next.js serving stack
+in local Docker, local UI development mode, and Kubernetes.
 
-Run the app stack:
+## Components
+
+- API: `services/api` (FastAPI, SQLAlchemy, Alembic, PostgreSQL backend)
+- UI: `services/ui` (Next.js)
+- Database: PostgreSQL (`pardon_postgres` in Docker Compose)
+
+## Local Docker stack (recommended default)
+
+Start:
 
 ```bash
 make app_up
 ```
 
-This stack now runs PostgreSQL as the API persistence backend through SQLAlchemy ORM.
-Database schema is managed with Alembic migrations.
+Validate:
 
 Security envs (recommended for non-dev):
 - `PARDON_RETRAIN_AUTH_ENABLED=true` enables auth on `POST /api/v1/retrain`.
@@ -18,9 +26,13 @@ Security envs (recommended for non-dev):
 - `API_BASE_URL=http://api:8000` is used by Next.js server-side rendering.
 - `NEXT_PUBLIC_RETRAIN_API_TOKEN=<same-token>` enables UI retrain button to send bearer token.
 
+```bash
+make app_smoke
+```
+
 Endpoints:
 - API health: `http://localhost:8000/healthz`
-- OpenAPI: `http://localhost:8000/docs`
+- API docs: `http://localhost:8000/docs`
 - UI: `http://localhost:3001`
 
 Stop:
@@ -29,110 +41,149 @@ Stop:
 make app_down
 ```
 
-Run migrations manually (optional, startup already runs them):
+Inspect logs:
+
+```bash
+make app_logs
+```
+
+## Environment variables
+
+### API security and CORS
+
+- `PARDON_RETRAIN_AUTH_ENABLED=true`: enables auth for `POST /api/v1/retrain`
+- `PARDON_RETRAIN_BEARER_TOKEN=<strong-secret>`: expected token value
+- `PARDON_CORS_ALLOWED_ORIGINS=http://localhost:3001,https://your-ui-host`:
+  comma-separated allowlist for browser origins
+
+### UI API wiring
+
+- `API_BASE_URL=http://api:8000`: server-side API URL used by UI inside Docker/K8s
+- `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`: browser-side API URL for local UI dev
+- `NEXT_PUBLIC_RETRAIN_API_TOKEN=<token>`: UI sends bearer token for retrain action
+
+## Two UI usage modes
+
+### Mode A: UI inside Docker Compose
+
+- Start with `make app_up`
+- Open `http://localhost:3001`
+- Works well for stack-level checks and smoke validation
+
+### Mode B: UI local dev server (best for browser API debugging)
+
+Use this mode when browser client components must call local API directly:
+
+```bash
+make app_up
+cd services/ui
+npm install
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev
+```
+
+Open `http://localhost:3001`.
+
+## API operations covered by UI
+
+- `POST /api/v1/predict`: online inference
+- `GET /api/v1/predictions/runs`: run-level prediction summaries
+- `GET /api/v1/predictions/runs/{request_id}`: prediction run details
+- `POST /api/v1/retrain`: start background retraining
+- `GET /api/v1/retrain/{job_id}`: retrain job progress
+- `GET /api/v1/experiments` and `GET /api/v1/experiments/{run_id}`: runs and details
+- `GET /api/v1/notifications/drift`: drift notifications feed
+
+## Database migrations
+
+Migrations run automatically on API container startup.
+
+Manual migration (optional):
 
 ```bash
 make db_migrate
 ```
 
-`db_migrate` uses localhost Postgres by default (`postgresql+psycopg://pardon:pardon@localhost:5433/pardon`).
-If you need a different database URL, override `LOCAL_DB_URL`:
+Default DB URL for manual migration:
+`postgresql+psycopg://pardon:pardon@localhost:5433/pardon`
+
+Override:
 
 ```bash
 make db_migrate LOCAL_DB_URL="postgresql+psycopg://user:pass@host:5432/dbname"
 ```
 
-## Split-ready API contract workflow
+## OpenAPI and typed UI client sync
 
-Export backend OpenAPI schema:
+Refresh API schema and generated UI types:
 
 ```bash
 make openapi_export
-```
-
-Generate typed UI schema client:
-
-```bash
 make ui_codegen
 ```
 
-This keeps `services/ui` decoupled from backend internals and makes future repo split easier.
-The UI fetch layer is centralized in `services/ui/lib/api-client.ts` and typed from generated OpenAPI schema.
+CI validates this contract sync via `make ci_openapi_codegen_check`.
 
-## API endpoints
+## Troubleshooting
 
-- `POST /api/v1/predict` - online inference for provided feature vectors.
-- `GET /api/v1/predictions/recent` - recent inference table data.
-- `POST /api/v1/retrain` - trigger background retraining.
-- `GET /api/v1/retrain/{job_id}` - retrain job status.
-- `GET /api/v1/experiments` - MLflow experiments/runs list.
-- `GET /api/v1/notifications/drift` - drift notifications feed.
+### API container exits immediately
 
-## Minikube deployment
-
-1. Start Minikube and enable ingress:
+Check API logs:
 
 ```bash
-make k8s_minikube_up
+docker compose -f docker-compose.app.yml --profile app logs api
 ```
 
-2. Build images in the local Docker daemon:
+If startup fails with missing CLI tools (`alembic` not found), ensure compose
+command uses `uv run ...` and `.venv` is not shadowed by bind mounts.
+
+### Minikube starts but Kubernetes is not ready
+
+If `minikube start` prints addon validation errors like
+`failed to download openapi ... connection refused`, check cluster status:
 
 ```bash
-docker build -f services/api/Dockerfile -t pardon-api:latest .
-docker build -f services/ui/Dockerfile -t pardon-ui:latest .
+minikube status
 ```
 
-3. Load images to Minikube:
+If you see `host: Running` but `kubelet/apiserver: Stopped`, recreate profile:
 
 ```bash
-minikube image load pardon-api:latest
-minikube image load pardon-ui:latest
+minikube stop
+minikube delete --purge
+minikube start --driver=docker --cpus=2 --memory=4600
 ```
 
-If a pod is already using an old local image, scale it down before replacing the
-image:
+Then enable addons explicitly after API server is up:
 
 ```bash
-kubectl -n pardon scale deployment/pardon-ui --replicas=0
-kubectl -n pardon wait --for=delete pod -l app.kubernetes.io/component=ui --timeout=120s || true
-minikube ssh -- docker rmi -f pardon-ui:latest || true
-minikube image load pardon-ui:latest
-kubectl -n pardon scale deployment/pardon-ui --replicas=1
+minikube addons enable default-storageclass
+minikube addons enable storage-provisioner
+minikube addons enable ingress
 ```
 
-4. Deploy:
+### UI shows "Failed to fetch"
+
+- Confirm API health endpoint responds on `http://localhost:8000/healthz`
+- For browser-mode UI, run local UI dev with:
+  `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`
+- Check `PARDON_CORS_ALLOWED_ORIGINS` includes your UI origin
+
+### Predictions table is empty
+
+Run at least one prediction request (`POST /api/v1/predict`); retraining alone
+does not create prediction rows.
+
+### `rollout status` fails with `progress deadline exceeded`
+
+This usually means new pods failed to become ready (often image pull issues).
+Inspect the failing pod directly:
 
 ```bash
-make k8s_deploy
-make k8s_status
+kubectl -n pardon get pods
+kubectl -n pardon describe pod <failing-pod-name>
 ```
 
-5. Wait for rollouts:
-
-```bash
-kubectl -n pardon rollout status deployment/pardon-api
-kubectl -n pardon rollout status deployment/pardon-ui
-```
-
-6. Open the app locally:
-
-```bash
-make k8s_port_forward
-```
-
-Then open:
-- UI: `http://localhost:3001`
-- API health: `http://localhost:8000/healthz`
-
-Add `pardon.local` to `/etc/hosts` pointing to Minikube IP to use ingress host
-routing:
-
-```bash
-echo "$(minikube ip) pardon.local" | sudo tee -a /etc/hosts
-```
-
-The UI exposes `GET /healthz` for Kubernetes readiness/liveness probes. The
-dashboard page may call the API during server-side rendering, so probes should
-not use `/`.
+If reason is `ImagePullBackOff` for GHCR (`unauthorized`), either:
+- make GHCR package public, or
+- create/fix `ghcr-secret` and attach it as imagePullSecret in namespace.
 

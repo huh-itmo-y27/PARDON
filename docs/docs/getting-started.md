@@ -1,5 +1,7 @@
-Getting started
-===============
+# Getting Started
+
+This guide is the fastest end-to-end local path:
+prepare data, train a model, run predictions, and inspect results.
 
 ## 1) Install dependencies
 
@@ -7,57 +9,76 @@ Getting started
 make requirements
 ```
 
-## 2) Prepare a dataset scenario
+## 2) Build dataset and features
 
 Choose a scenario from `data/raw` (`valve1`, `valve2`, `other`,
-`anomaly-free`, or `all`):
+`anomaly-free`, `all`):
 
 ```bash
-make dataset DATA_SCENARIO=valve2
-make features DATA_SCENARIO=valve2
+make dataset DATA_SCENARIO=valve1
+make features DATA_SCENARIO=valve1
 ```
 
-Tip: avoid `all` if any source files are missing required label columns.
+Tip: avoid `all` if any raw files are missing required label columns.
 
-## 3) Run training and inference experiments
+## 3) Train and predict
 
 ```bash
-make train MODEL=isolation_forest DATA_SCENARIO=valve1 
-make predict MODEL=isolation_forest DATA_SCENARIO=valve1 
+make train MODEL=isolation_forest DATA_SCENARIO=valve1
+make predict MODEL=isolation_forest DATA_SCENARIO=valve1
 ```
 
-Optional MLflow UI:
+Swap `MODEL=` to `conv_ae` or `lstm_ae` to compare model families.
+
+## 4) Inspect experiments and metrics
+
+Start optional local observability services:
 
 ```bash
 make mlflow_ui
-```
-
-## 4) Start Grafana + Prometheus services
-
-```bash
 make monitoring_up
 ```
 
-Service URLs:
+Endpoints:
 
+- MLflow: `http://localhost:5000`
 - Grafana: `http://localhost:3000` (`admin` / `admin`)
 - Prometheus: `http://localhost:9090`
 - Pushgateway: `http://localhost:9091`
 
-In Grafana, inspect:
+In Grafana, check dashboards such as:
 
-- Recent Train and Predict Runs
-- Operational Health
-- MLflow Experiment Quality
+- `Recent Train and Predict Runs`
+- `Operational Health`
+- `MLflow Quality: Current vs History`
 
-## Next reading
+## 5) Optional: run serving stack
 
-- Dataset details: `Dataset (SKAB)`
-- Model behavior: `Models`
-- Tracking and registry: `MLflow`
-- Dashboards and metric paths: `Monitoring`
+To test FastAPI + Web UI locally:
 
-## 5) Stop monitoring services
+```bash
+make app_up
+make app_smoke
+```
+
+Open:
+
+- UI: `http://localhost:3001`
+- API docs: `http://localhost:8000/docs`
+
+Stop:
+
+```bash
+make app_down
+```
+
+## 6) Next guides by scenario
+
+- Local model workflow details: `Models`, `MLflow`, `Monitoring`
+- Local serving and API/UI troubleshooting: `Serving Platform`
+- Kubernetes and GitOps flow: `CD with Argo CD`
+
+Stop monitoring when done:
 
 ```bash
 make monitoring_down
