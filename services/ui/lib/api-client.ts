@@ -3,11 +3,15 @@ type JsonObject = Record<string, unknown>;
 const DEFAULT_API_BASE_URL = "http://localhost:8000";
 
 function getApiBaseUrl(): string {
-  const configured = process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL;
-
   if (typeof window === "undefined") {
-    return configured;
+    return (
+      process.env.API_BASE_URL ||
+      process.env.NEXT_PUBLIC_API_BASE_URL ||
+      DEFAULT_API_BASE_URL
+    );
   }
+
+  const configured = process.env.NEXT_PUBLIC_API_BASE_URL || DEFAULT_API_BASE_URL;
 
   try {
     const url = new URL(configured);
