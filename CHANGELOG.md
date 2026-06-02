@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.4](https://github.com/huh-itmo-y27/PARDON/compare/v0.1.3...v0.1.4) (2026-06-02)
+
+
+### Documentation
+
+* expand comprehensive overview, local setup instructions ([#29](https://github.com/huh-itmo-y27/PARDON/issues/29)) ([355aa31](https://github.com/huh-itmo-y27/PARDON/commit/355aa3137dfebbd16ca35e79ef008ddd8ca3e4fc))
+
 ## [0.1.3](https://github.com/huh-itmo-y27/PARDON/compare/v0.1.2...v0.1.3) (2026-05-30)
 
 
