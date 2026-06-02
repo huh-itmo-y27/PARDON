@@ -8,16 +8,33 @@
 
 </div>
 
-PARDON (Pumps Anomaly Recognition & Detection On Network) is a production-oriented anomaly detection project with:
+# PARDON
 
-- SKAB-style dataset processing
-- multiple model backends (`isolation_forest`, `conv_ae`, `lstm_ae`)
-- MLflow experiment tracking and optional model registry
-- drift metrics (data, target, concept proxy)
-- Prometheus + Grafana monitoring dashboards
-- CD to Kubernetes with Argo CD and GHCR
+PARDON (Pumps Anomaly Recognition & Detection On Network) is an anomaly
+detection platform for pump telemetry. It covers the full lifecycle:
 
-## Quick start
+- data preparation and feature generation from SKAB-like datasets
+- model training and offline prediction (`isolation_forest`, `conv_ae`, `lstm_ae`)
+- experiment tracking with MLflow
+- drift and runtime metrics with Prometheus + Grafana
+- serving layer (FastAPI + Next.js)
+- Kubernetes deployment workflow (Minikube + Argo CD + GHCR)
+
+## Architecture at a glance
+
+- ML pipeline: `anomaly_detection/` modules and `make train` / `make predict`
+- Serving stack: `services/api` (FastAPI + PostgreSQL) and `services/ui` (Next.js)
+- Observability: `docker-compose.monitoring.yml`, `monitoring/` dashboards
+- Kubernetes manifests: `deploy/k8s/` and `deploy/argocd/`
+
+## Scenario quick links
+
+- First run on local data: [docs/docs/getting-started.md](docs/docs/getting-started.md)
+- Local API + Web UI serving: [docs/docs/serving.md](docs/docs/serving.md)
+- Minikube + Argo CD delivery: [docs/docs/cd-argocd.md](docs/docs/cd-argocd.md)
+- Monitoring dashboards and metrics: [docs/docs/monitoring.md](docs/docs/monitoring.md)
+
+## Quick start (local training + prediction)
 
 ```bash
 make requirements
@@ -27,60 +44,130 @@ make train MODEL=isolation_forest DATA_SCENARIO=valve1
 make predict MODEL=isolation_forest DATA_SCENARIO=valve1
 ```
 
-Start local monitoring:
+Optional UIs:
 
 ```bash
+make mlflow_ui
 make monitoring_up
+```
+
+- MLflow: `http://localhost:5000`
+- Grafana: `http://localhost:3000`
+- Prometheus: `http://localhost:9090`
+
+## Local model workflow runbook
+
+1. Install dependencies:
+   ```bash
+   make requirements
+   ```
+2. Build processed dataset and features:
+   ```bash
+   make dataset DATA_SCENARIO=valve1
+   make features DATA_SCENARIO=valve1
+   ```
+3. Train and evaluate:
+   ```bash
+   make train MODEL=isolation_forest DATA_SCENARIO=valve1
+   ```
+4. Generate predictions:
+   ```bash
+   make predict MODEL=isolation_forest DATA_SCENARIO=valve1
+   ```
+
+Data is expected under `data/raw` with columns `datetime`, numeric features,
+`anomaly`, and `changepoint`.
+
+## Local serving runbook (API + Web UI)
+
+Start full app stack:
+
+```bash
+make app_up
+```
+
+Verify:
+
+```bash
+make app_smoke
 ```
 
 Endpoints:
 
-- Grafana: `http://localhost:3000`
-- Prometheus: `http://localhost:9090`
-- MLflow UI: `make mlflow_ui` (default port `5000`)
+- API health: `http://localhost:8000/healthz`
+- API docs: `http://localhost:8000/docs`
+- Web UI: `http://localhost:3001`
 
-## Documentation
+Stop:
 
-Detailed docs live in `docs/` and are split by topic:
+```bash
+make app_down
+```
 
-- `Getting Started`
-- `Dataset (SKAB)`
-- `Models`
-- `MLflow`
-- `Monitoring`
-- `CD with Argo CD`
-- `Publish Docs`
+For browser-side API calls from local UI dev server:
+
+```bash
+cd services/ui
+NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev
+```
+
+## Minikube deployment runbook
+
+1. Start local cluster:
+   ```bash
+   make k8s_minikube_up
+   ```
+2. Build local images:
+   ```bash
+   docker build -f services/api/Dockerfile -t pardon-api:latest .
+   docker build -f services/ui/Dockerfile -t pardon-ui:latest .
+   ```
+3. Load images into Minikube:
+   ```bash
+   minikube image load pardon-api:latest
+   minikube image load pardon-ui:latest
+   ```
+4. Apply manifests and check status:
+   ```bash
+   make k8s_deploy
+   make k8s_status
+   ```
+5. Access services:
+   ```bash
+   make k8s_port_forward
+   ```
+
+Then open `http://localhost:3001` (UI) and `http://localhost:8000/healthz`
+(API health).
 
 ## Common commands
 
-- `make requirements` - install dependencies
-- `make dataset DATA_SCENARIO=<scenario>` - build train/val/test splits
-- `make features DATA_SCENARIO=<scenario>` - build scaled feature datasets
-- `make train MODEL=<model> DATA_SCENARIO=<scenario>` - train and evaluate model
-- `make predict MODEL=<model> DATA_SCENARIO=<scenario>` - generate predictions
-- `make mlflow_ui` - start MLflow tracking UI
-- `make monitoring_up` / `make monitoring_down` - start/stop monitoring stack
+- `make requirements`: install Python dependencies
+- `make dataset DATA_SCENARIO=<scenario>`: generate split datasets
+- `make features DATA_SCENARIO=<scenario>`: build scaled features
+- `make train MODEL=<model> DATA_SCENARIO=<scenario>`: train pipeline
+- `make predict MODEL=<model> DATA_SCENARIO=<scenario>`: run inference pipeline
+- `make app_up` / `make app_down`: run local serving stack
+- `make app_smoke`: quick health checks for API and UI
+- `make monitoring_up` / `make monitoring_down`: run monitoring stack
+- `make openapi_export` + `make ui_codegen`: refresh typed API schema for UI
 
-## Data requirements
+## Troubleshooting index
 
-Raw CSV files are discovered recursively under `data/raw` and are expected to
-contain:
+- API container unhealthy on startup: see serving guide troubleshooting section
+- UI cannot fetch API from browser: use local UI mode with
+  `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`
+- Argo CD install CRD annotation too long: use server-side apply in Argo CD guide
+- Empty prediction table in UI: run at least one `POST /api/v1/predict`
 
-- `datetime`
-- numeric feature columns
-- `anomaly` (0/1)
-- `changepoint` (0/1)
+## Full documentation
 
-If a file is missing required label columns, dataset creation fails for that
-scenario.
-
-## Project structure
-
-- `anomaly_detection/` - core package
-- `anomaly_detection/modeling/` - model training and inference
-- `anomaly_detection/monitoring/` - drift and metrics integration
-- `monitoring/` - Prometheus/Grafana configs and dashboards
-- `data/processed/` - generated splits and feature data
-- `models/` - saved model artifacts and metadata
+- [docs/docs/index.md](docs/docs/index.md)
+- [docs/docs/getting-started.md](docs/docs/getting-started.md)
+- [docs/docs/serving.md](docs/docs/serving.md)
+- [docs/docs/cd-argocd.md](docs/docs/cd-argocd.md)
+- [docs/docs/models.md](docs/docs/models.md)
+- [docs/docs/mlflow.md](docs/docs/mlflow.md)
+- [docs/docs/monitoring.md](docs/docs/monitoring.md)
 
 
