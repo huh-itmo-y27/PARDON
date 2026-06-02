@@ -55,6 +55,10 @@ services:
         NEXT_PUBLIC_API_BASE_URL: "http://api:8000"
         NEXT_PUBLIC_RETRAIN_API_TOKEN: "${NEXT_PUBLIC_RETRAIN_API_TOKEN-}"
     container_name: pardon_ui
+    environment:
+      - API_BASE_URL=http://api:8000
+      - NEXT_PUBLIC_API_BASE_URL=http://api:8000
+      - NEXT_PUBLIC_RETRAIN_API_TOKEN=${NEXT_PUBLIC_RETRAIN_API_TOKEN:-}
     ports:
       - "3001:3001"
     depends_on:

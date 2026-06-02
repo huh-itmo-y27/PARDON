@@ -15,6 +15,7 @@ Security envs (recommended for non-dev):
 - `PARDON_RETRAIN_AUTH_ENABLED=true` enables auth on `POST /api/v1/retrain`.
 - `PARDON_RETRAIN_BEARER_TOKEN=<strong-secret>` expected as `Authorization: Bearer <token>`.
 - `PARDON_CORS_ALLOWED_ORIGINS=http://localhost:3001,https://your-ui-host` (comma-separated).
+- `API_BASE_URL=http://api:8000` is used by Next.js server-side rendering.
 - `NEXT_PUBLIC_RETRAIN_API_TOKEN=<same-token>` enables UI retrain button to send bearer token.
 
 Endpoints:
@@ -69,27 +70,69 @@ The UI fetch layer is centralized in `services/ui/lib/api-client.ts` and typed f
 
 ## Minikube deployment
 
-1. Build images in local docker daemon:
+1. Start Minikube and enable ingress:
+
+```bash
+make k8s_minikube_up
+```
+
+2. Build images in the local Docker daemon:
 
 ```bash
 docker build -f services/api/Dockerfile -t pardon-api:latest .
 docker build -f services/ui/Dockerfile -t pardon-ui:latest .
 ```
 
-2. Load images to minikube:
+3. Load images to Minikube:
 
 ```bash
 minikube image load pardon-api:latest
 minikube image load pardon-ui:latest
 ```
 
-3. Deploy:
+If a pod is already using an old local image, scale it down before replacing the
+image:
 
 ```bash
-make k8s_minikube_up
+kubectl -n pardon scale deployment/pardon-ui --replicas=0
+kubectl -n pardon wait --for=delete pod -l app.kubernetes.io/component=ui --timeout=120s || true
+minikube ssh -- docker rmi -f pardon-ui:latest || true
+minikube image load pardon-ui:latest
+kubectl -n pardon scale deployment/pardon-ui --replicas=1
+```
+
+4. Deploy:
+
+```bash
 make k8s_deploy
 make k8s_status
 ```
 
-Add `pardon.local` to `/etc/hosts` pointing to minikube IP to use ingress host routing.
+5. Wait for rollouts:
+
+```bash
+kubectl -n pardon rollout status deployment/pardon-api
+kubectl -n pardon rollout status deployment/pardon-ui
+```
+
+6. Open the app locally:
+
+```bash
+make k8s_port_forward
+```
+
+Then open:
+- UI: `http://localhost:3001`
+- API health: `http://localhost:8000/healthz`
+
+Add `pardon.local` to `/etc/hosts` pointing to Minikube IP to use ingress host
+routing:
+
+```bash
+echo "$(minikube ip) pardon.local" | sudo tee -a /etc/hosts
+```
+
+The UI exposes `GET /healthz` for Kubernetes readiness/liveness probes. The
+dashboard page may call the API during server-side rendering, so probes should
+not use `/`.
 
