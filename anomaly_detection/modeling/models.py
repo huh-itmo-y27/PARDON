@@ -521,8 +521,10 @@ class VAELossLayer(layers.Layer):
 
 @keras.saving.register_keras_serializable(package="Custom")
 class VAESampling(layers.Layer):
-    def call(self, inputs):
+    def call(self, inputs, training=None):
         z_mean, z_log_var = inputs
+        if training is False:
+            return z_mean
         epsilon = tf.random.normal(tf.shape(z_mean))
         return z_mean + tf.exp(0.5 * z_log_var) * epsilon
 
