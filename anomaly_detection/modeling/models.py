@@ -8,8 +8,16 @@ from typing import Any, Protocol
 import joblib
 import numpy as np
 from sklearn.ensemble import IsolationForest
+import tensorflow as tf
 from tensorflow import keras
 from tensorflow.keras import layers
+
+if hasattr(keras, "saving") and hasattr(
+    keras.saving, "register_keras_serializable"
+):
+    register_keras_serializable = keras.saving.register_keras_serializable
+else:
+    register_keras_serializable = keras.utils.register_keras_serializable
 
 
 def create_sequences(values: np.ndarray, time_steps: int) -> np.ndarray:
@@ -494,7 +502,7 @@ class TCNAEModel:
         )
 
 
-@keras.saving.register_keras_serializable(package="Custom")
+@register_keras_serializable(package="Custom")
 class VAELossLayer(layers.Layer):
     def __init__(self, beta=1.0, kl_weight=1.0, **kwargs):
         super().__init__(**kwargs)
@@ -519,7 +527,7 @@ class VAELossLayer(layers.Layer):
         return x_recon
 
 
-@keras.saving.register_keras_serializable(package="Custom")
+@register_keras_serializable(package="Custom")
 class VAESampling(layers.Layer):
     def call(self, inputs, training=None):
         z_mean, z_log_var = inputs
