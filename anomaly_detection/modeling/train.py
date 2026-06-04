@@ -157,13 +157,13 @@ def compute_false_alarms_per_day(
     if len(fp_idx) == 0:
         return {"false_alarm_events": 0, "false_alarms_per_day": 0.0}
     num_events = 1
-    for prev_idx, cur_idx in zip(fp_idx[:-1], fp_idx[1:]):
-        delta_minutes = (
     for prev_idx, cur_idx in zip(fp_idx[:-1], fp_idx[1:], strict=False):
         if np.any(y_true[prev_idx + 1 : cur_idx] == 1):
             num_events += 1
             continue
-        delta_minutes = (timestamps.iloc[cur_idx] - timestamps.iloc[prev_idx]).total_seconds() / 60.0
+        delta_minutes = (
+            timestamps.iloc[cur_idx] - timestamps.iloc[prev_idx]
+        ).total_seconds() / 60.0
         if delta_minutes > merge_gap_minutes:
             num_events += 1
     normal_mask = y_true == 0
