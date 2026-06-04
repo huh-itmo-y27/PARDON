@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.2.0](https://github.com/huh-itmo-y27/PARDON/compare/v0.1.4...v0.2.0) (2026-06-04)
+
+
+### Features
+
+* implement tcn_ae and vae models ([#31](https://github.com/huh-itmo-y27/PARDON/issues/31)) ([58b93d5](https://github.com/huh-itmo-y27/PARDON/commit/58b93d56a5046fd6cf8d09c8a2cfb7d2e4a585d3))
+
 ## [0.1.4](https://github.com/huh-itmo-y27/PARDON/compare/v0.1.3...v0.1.4) (2026-06-02)
 
 
