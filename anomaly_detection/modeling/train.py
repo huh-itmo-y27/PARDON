@@ -520,11 +520,12 @@ def main(
             "Event-based recall.",
             event_metrics["event_recall"],
         )
-    emitter.gauge(
-        "anomaly_pipeline_false_alarms_per_day",
-        "False alarms per day.",
-        fp_metrics["false_alarms_per_day"],
-    )
+    if not np.isnan(fp_metrics["false_alarms_per_day"]):
+        emitter.gauge(
+            "anomaly_pipeline_false_alarms_per_day",
+            "False alarms per day.",
+            fp_metrics["false_alarms_per_day"],
+        )
     if not np.isnan(extended_metrics["pr_auc"]):
         emitter.gauge(
             "anomaly_pipeline_pr_auc",
