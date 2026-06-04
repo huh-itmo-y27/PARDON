@@ -345,11 +345,11 @@ class TCNAEModel:
         self.n_features_ = None
 
     def _residual_block(
-            self,
-            x: keras.layers.Layer,
-            filters: int,
-            dilation: int,
-            dropout_rate: float = 0.1
+        self,
+        x: keras.layers.Layer,
+        filters: int,
+        dilation: int,
+        dropout_rate: float = 0.1,
     ) -> keras.layers.Layer:
         from tensorflow.keras import layers
 
@@ -379,29 +379,35 @@ class TCNAEModel:
         return layers.Add()([x, shortcut])
 
     def _build_encoder(self, input_shape: tuple[int, int]) -> keras.Model:
-
         inputs = keras.Input(shape=input_shape)
         x = inputs
 
         for dilation in self.dilations:
-            x = self._residual_block(x, self.filters, dilation, self.dropout_rate)
+            x = self._residual_block(
+                x, self.filters, dilation, self.dropout_rate
+            )
 
-        x = layers.Conv1D(self.latent_dim, 1, padding="same", activation="relu")(x)
+        x = layers.Conv1D(
+            self.latent_dim, 1, padding="same", activation="relu"
+        )(x)
 
         encoder = keras.Model(inputs, x, name="tcn_encoder")
         return encoder
 
     def _build_decoder(self, latent_shape: tuple[int, int]) -> keras.Model:
-
         inputs = keras.Input(shape=latent_shape)
         x = inputs
 
         x = layers.Conv1D(self.filters, 1, padding="same", activation="relu")(x)
 
         for dilation in reversed(self.dilations):
-            x = self._residual_block(x, self.filters, dilation, self.dropout_rate)
+            x = self._residual_block(
+                x, self.filters, dilation, self.dropout_rate
+            )
 
-        outputs = layers.Conv1D(self.n_features_, 1, padding="same", activation="linear")(x)
+        outputs = layers.Conv1D(
+            self.n_features_, 1, padding="same", activation="linear"
+        )(x)
 
         decoder = keras.Model(inputs, outputs, name="tcn_decoder")
         return decoder
@@ -480,6 +486,7 @@ class TCNAEModel:
 
     def mlflow_log_model(self, model_artifact_name: str) -> str:
         import mlflow.tensorflow
+
         model_info = mlflow.tensorflow.log_model(
             self.model, name=model_artifact_name
         )
@@ -488,11 +495,12 @@ class TCNAEModel:
     @staticmethod
     def mlflow_load_model(model_uri: str) -> Any:
         import mlflow.tensorflow
+
         return mlflow.tensorflow.load_model(model_uri)
 
     @staticmethod
     def score_points_with_mlflow_model(
-            loaded_model: Any, x_data: np.ndarray, time_steps: int
+        loaded_model: Any, x_data: np.ndarray, time_steps: int
     ) -> np.ndarray:
         eval_seq = create_sequences(x_data, time_steps=time_steps)
         reconstructed = loaded_model.predict(eval_seq, verbose=0)
@@ -512,13 +520,13 @@ class VAELossLayer(layers.Layer):
     def call(self, inputs):
         x, x_recon, z_mean, z_log_var = inputs
 
-        reconstruction_loss = ops.mean(
-            ops.mean(ops.abs(x - x_recon), axis=-1)
+        reconstruction_loss = keras.ops.mean(
+            keras.ops.mean(keras.ops.abs(x - x_recon), axis=-1)
         )
 
-        kl_loss = -0.5 * ops.mean(
-            1 + z_log_var - ops.square(z_mean) - ops.exp(z_log_var),
-            axis=-1
+        kl_loss = -0.5 * keras.ops.mean(
+            1 + z_log_var - keras.ops.square(z_mean) - keras.ops.exp(z_log_var),
+            axis=-1,
         )
 
         total = reconstruction_loss + self.beta * self.kl_weight * kl_loss
@@ -558,12 +566,23 @@ class VAEModel:
         self.n_features_ = None
 
     def _build_encoder(self, input_shape: tuple[int, int]) -> keras.Model:
-
         inputs = keras.Input(shape=input_shape, name="encoder_input")
 
-        x = layers.Conv1D(self.filters, self.kernel_size, padding="same", activation="relu")(inputs)
-        x = layers.Conv1D(self.filters * 2, self.kernel_size, padding="same", activation="relu")(x)
-        x = layers.Conv1D(self.filters * 4, self.kernel_size, padding="same", activation="relu")(x)
+        x = layers.Conv1D(
+            self.filters, self.kernel_size, padding="same", activation="relu"
+        )(inputs)
+        x = layers.Conv1D(
+            self.filters * 2,
+            self.kernel_size,
+            padding="same",
+            activation="relu",
+        )(x)
+        x = layers.Conv1D(
+            self.filters * 4,
+            self.kernel_size,
+            padding="same",
+            activation="relu",
+        )(x)
 
         x = layers.GlobalAveragePooling1D()(x)
 
@@ -577,8 +596,9 @@ class VAEModel:
         encoder = keras.Model(inputs, [z_mean, z_log_var, z], name="encoder")
         return encoder
 
-    def _build_decoder(self, latent_dim: int, output_shape: tuple[int, int]) -> keras.Model:
-
+    def _build_decoder(
+        self, latent_dim: int, output_shape: tuple[int, int]
+    ) -> keras.Model:
         latent_inputs = keras.Input(shape=(latent_dim,), name="decoder_input")
 
         x = layers.Dense(64, activation="relu")(latent_inputs)
@@ -586,19 +606,34 @@ class VAEModel:
 
         x = layers.Reshape((self.time_steps, self.filters))(x)
 
-        x = layers.Conv1DTranspose(self.filters * 4, self.kernel_size, padding="same", activation="relu")(x)
-        x = layers.Conv1DTranspose(self.filters * 2, self.kernel_size, padding="same", activation="relu")(x)
-        x = layers.Conv1DTranspose(self.filters, self.kernel_size, padding="same", activation="relu")(x)
+        x = layers.Conv1DTranspose(
+            self.filters * 4,
+            self.kernel_size,
+            padding="same",
+            activation="relu",
+        )(x)
+        x = layers.Conv1DTranspose(
+            self.filters * 2,
+            self.kernel_size,
+            padding="same",
+            activation="relu",
+        )(x)
+        x = layers.Conv1DTranspose(
+            self.filters, self.kernel_size, padding="same", activation="relu"
+        )(x)
 
         outputs = layers.Conv1DTranspose(
-            output_shape[-1], self.kernel_size, padding="same", activation="linear", name="decoder_output"
+            output_shape[-1],
+            self.kernel_size,
+            padding="same",
+            activation="linear",
+            name="decoder_output",
         )(x)
 
         decoder = keras.Model(latent_inputs, outputs, name="decoder")
         return decoder
 
     def _build(self, n_features: int) -> keras.Model:
-
         input_shape = (self.time_steps, n_features)
 
         self.encoder = self._build_encoder(input_shape)
@@ -609,8 +644,9 @@ class VAEModel:
         z_mean, z_log_var, z = self.encoder(inputs)
         reconstructed = self.decoder(z)
 
-        outputs = VAELossLayer(beta=self.beta, kl_weight=self.kl_weight, name="vae_loss_layer")([inputs, reconstructed,
-                                                                                                 z_mean, z_log_var])
+        outputs = VAELossLayer(
+            beta=self.beta, kl_weight=self.kl_weight, name="vae_loss_layer"
+        )([inputs, reconstructed, z_mean, z_log_var])
 
         vae = keras.Model(inputs, outputs, name="vae")
 
@@ -622,7 +658,9 @@ class VAEModel:
         self.n_features_ = x_train.shape[-1]
         self.model = self._build(self.n_features_)
 
-        dummy_target = np.zeros((len(x_train), self.time_steps, self.n_features_))
+        dummy_target = np.zeros(
+            (len(x_train), self.time_steps, self.n_features_)
+        )
 
         self.model.fit(
             x_train,
@@ -640,7 +678,7 @@ class VAEModel:
         return np.mean(np.abs(reconstructed - x_data), axis=(1, 2))
 
     def score_with_reconstruction_probability(
-            self, x_data: np.ndarray, n_samples: int = 10
+        self, x_data: np.ndarray, n_samples: int = 10
     ) -> np.ndarray:
         if self.encoder is None or self.decoder is None:
             raise RuntimeError("Model not fitted. Call fit() first.")
@@ -709,9 +747,7 @@ class VAEModel:
         encoder_path = path / "encoder.keras"
         decoder_path = path / "decoder.keras"
         if encoder_path.exists():
-            instance.encoder = keras.models.load_model(
-                encoder_path
-            )
+            instance.encoder = keras.models.load_model(encoder_path)
         if decoder_path.exists():
             instance.decoder = keras.models.load_model(decoder_path)
 
@@ -719,6 +755,7 @@ class VAEModel:
 
     def mlflow_log_model(self, model_artifact_name: str) -> str:
         import mlflow.tensorflow
+
         model_info = mlflow.tensorflow.log_model(
             self.model, name=model_artifact_name
         )
@@ -732,7 +769,7 @@ class VAEModel:
 
     @staticmethod
     def score_points_with_mlflow_model(
-            loaded_model: Any, x_data: np.ndarray, time_steps: int
+        loaded_model: Any, x_data: np.ndarray, time_steps: int
     ) -> np.ndarray:
         eval_seq = create_sequences(x_data, time_steps=time_steps)
         reconstructed = loaded_model.predict(eval_seq, verbose=0)
@@ -740,6 +777,7 @@ class VAEModel:
         return window_scores_to_point_scores(
             window_scores, n_points=len(x_data), time_steps=time_steps
         )
+
 
 @dataclass(frozen=True)
 class ModelStrategy:
