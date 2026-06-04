@@ -465,8 +465,10 @@ class TCNAEModel:
             "model_type": "tcn_ae",
             "time_steps": self.time_steps,
             "filters": self.filters,
+            "kernel_size": self.kernel_size,
             "dilations": list(self.dilations),
             "latent_dim": self.latent_dim,
+            "dropout_rate": self.dropout_rate,
             "n_features": self.n_features_,
         }
         (path / "metadata.json").write_text(json.dumps(metadata), "utf-8")
@@ -477,8 +479,10 @@ class TCNAEModel:
         instance = cls(
             time_steps=int(metadata["time_steps"]),
             filters=int(metadata["filters"]),
+            kernel_size=int(metadata.get("kernel_size", 3)),
             dilations=tuple(metadata["dilations"]),
             latent_dim=int(metadata["latent_dim"]),
+            dropout_rate=float(metadata.get("dropout_rate", 0.1)),
         )
         instance.n_features_ = int(metadata["n_features"])
         instance.model = keras.models.load_model(path / "model.keras")
