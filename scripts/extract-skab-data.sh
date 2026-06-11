@@ -25,7 +25,7 @@ copy_scenario() {
     echo "Scenario not found in SKAB archive: $name" >&2
     exit 1
   fi
-  rm -rf "$OUT_DIR/$name"
+  rm -rf "${OUT_DIR:?}/${name:?}"
   mkdir -p "$OUT_DIR"
   cp -R "$DATA_DIR/$name" "$OUT_DIR/$name"
   echo "Extracted SKAB scenario '$name' -> $OUT_DIR/$name"
