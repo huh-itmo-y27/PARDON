@@ -1,0 +1,11 @@
+md5: c3027be135a37dbe50fedac87ed6678b
+deps:
+- checksum: '"652e2a35b06f666b29dfa3840031d95c295b82bc0db6a93ba7eb5c4795892f11"'
+  hash: md5
+  path: 
+    https://codeload.github.com/waico/SKAB/tar.gz/b2c0d46c2971dcbfe71e26087b6d231998bb91c2
+outs:
+- md5: 796e32e4a0def363009eb0668ac63e2f
+  size: 5391409
+  hash: md5
+  path: external/skab.tar.gz

@@ -1,0 +1,67 @@
+name: Release data artifacts
+
+on:
+  workflow_dispatch:
+    inputs:
+      release_tag:
+        description: GitHub Release tag for models/processed tarballs
+        required: true
+        default: data-v0.1.0
+  push:
+    tags:
+      - "data-v*"
+
+concurrency:
+  group: release-data-${{ github.event.inputs.release_tag || github.ref_name }}
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: false
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.10"
+
+      - name: Install uv
+        run: pip install uv
+
+      - name: Install dependencies
+        run: uv sync --dev
+
+      - name: Pull SKAB data and build training inputs
+        run: |
+          chmod +x scripts/pull-skab-data.sh scripts/extract-skab-data.sh
+          ./scripts/pull-skab-data.sh
+          ./scripts/extract-skab-data.sh data/external/skab.tar.gz data/raw valve1
+          uv run python -m anomaly_detection.dataset --scenario valve1
+          uv run python -m anomaly_detection.features
+
+      - name: Train release model bundle (valve1, project defaults)
+        run: |
+          for model in isolation_forest conv_ae lstm_ae; do
+            uv run python -m anomaly_detection.modeling.train \
+              --model-name "$model" \
+              --dataset-scenario valve1 \
+              --no-register-model \
+              --no-log-to-mlflow \
+              --verbose 0
+          done
+
+      - name: Build and publish release tarballs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+        run: |
+          chmod +x scripts/build-release-artifacts.sh scripts/publish-release-artifacts.sh
+          ./scripts/publish-release-artifacts.sh

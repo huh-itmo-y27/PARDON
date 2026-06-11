@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pardon-dvc-data-pv
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: dvc-data
+spec:
+  capacity:
+    storage: 5Gi
+  accessModes:
+    - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Retain
+  storageClassName: pardon-manual
+  hostPath:
+    path: /data/pardon-dvc
+    type: DirectoryOrCreate

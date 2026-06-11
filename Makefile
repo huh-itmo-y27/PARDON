@@ -54,26 +54,23 @@ format:
 .PHONY: test
 test:
 	uv run pytest tests
-## Configure DVC remote credentials (local config only)
-.PHONY: setup_dvc
-setup_dvc:
-	@set -a; \
-	. ./.env; \
-	set +a; \
-	uv run dvc remote modify --local minio_storage access_key_id "$$MINIO_ACCESS_KEY"; \
-	uv run dvc remote modify --local minio_storage secret_access_key "$$MINIO_SECRET_KEY"; \
-	echo "DVC configured"
-
-## Download versioned data and models from DVC remote
+## Download versioned data and models via DVC import-url
 .PHONY: data_pull
 data_pull:
-	dvc pull data/valve1.dvc models/models.dvc
+	./scripts/pull-skab-data.sh
+	./scripts/pull-release-artifacts.sh
+	./scripts/extract-skab-data.sh data/external/skab.tar.gz data/raw
+	./scripts/extract-release-artifacts.sh
 
-## Upload versioned data to DVC remote
-# TODO: delete move
-.PHONY: data_push
-data_push:
-	dvc push
+.PHONY: data_pull_skab
+data_pull_skab:
+	./scripts/pull-skab-data.sh
+	./scripts/extract-skab-data.sh data/external/skab.tar.gz data/raw
+
+.PHONY: data_import_release
+data_import_release:
+	./scripts/build-release-artifacts.sh
+	./scripts/publish-release-artifacts.sh
 
 ## Run MLflow UI for current local mlruns
 .PHONY: mlflow_ui
@@ -242,6 +239,14 @@ test_docker:
 .PHONY: lint_docker
 lint_docker:
 	docker compose run --rm app make lint
+
+## Run DVC sync Job on Kubernetes (minikube)
+.PHONY: k8s_dvc_sync
+k8s_dvc_sync:
+	kubectl apply -k deploy/k8s/overlays/minikube
+	kubectl delete job/pardon-dvc-sync -n $(K8S_NAMESPACE) --ignore-not-found
+	kubectl apply -f deploy/k8s/base/dvc-sync-job.yaml
+	kubectl wait --for=condition=complete --timeout=600s job/pardon-dvc-sync -n $(K8S_NAMESPACE)
 
 ## Start minikube with ingress enabled
 .PHONY: k8s_minikube_up

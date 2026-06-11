@@ -76,6 +76,24 @@ spec:
         app.kubernetes.io/name: pardon
         app.kubernetes.io/component: api
     spec:
+      initContainers:
+        - name: dvc-pull
+          image: pardon-api
+          imagePullPolicy: IfNotPresent
+          command: ["/bin/sh", "/app/scripts/k8s-dvc-pull.sh"]
+          env:
+            - name: PARDON_DVC_DATA_ROOT
+              value: /mnt/pardon-data
+          volumeMounts:
+            - name: pardon-dvc-data
+              mountPath: /mnt/pardon-data
+          resources:
+            requests:
+              cpu: 200m
+              memory: 512Mi
+            limits:
+              cpu: "1"
+              memory: 2Gi
       containers:
         - name: api
           image: pardon-api
@@ -90,6 +108,16 @@ spec:
           ports:
             - name: http
               containerPort: 8000
+          volumeMounts:
+            - name: pardon-dvc-data
+              mountPath: /app/data/raw
+              subPath: data/raw
+            - name: pardon-dvc-data
+              mountPath: /app/data/processed
+              subPath: data/processed
+            - name: pardon-dvc-data
+              mountPath: /app/models/base_models
+              subPath: models/base_models
           readinessProbe:
             httpGet:
               path: /readyz
@@ -109,6 +137,10 @@ spec:
             limits:
               cpu: "1"
               memory: 1Gi
+      volumes:
+        - name: pardon-dvc-data
+          persistentVolumeClaim:
+            claimName: pardon-dvc-data
 ---
 apiVersion: apps/v1
 kind: Deployment

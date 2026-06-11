@@ -202,6 +202,16 @@ data/interim/
 # Data external directory
 data/external/
 
+# Track DVC metadata in data/
+!data/*.dvc
+
+# DVC package archives (downloaded via import-url)
+data/processed-package.tar.gz
+models/models-package.tar.gz
+
+# Local release build output
+.release-artifacts/
+
 # Models directory (track only DVC metadata)
 !models/
 models/*

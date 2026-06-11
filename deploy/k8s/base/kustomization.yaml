@@ -3,6 +3,8 @@ kind: Kustomization
 resources:
   - namespace.yaml
   - configmap.yaml
+  - persistent-volume-claim.yaml
   - deployment.yaml
+  - dvc-sync-job.yaml
   - service.yaml
   - ingress.yaml

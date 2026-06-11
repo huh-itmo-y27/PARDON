@@ -1,6 +1,10 @@
-outs:
-- md5: 4c18bc1d5bc3827134ba179042458c41.dir
-  size: 3322945
-  nfiles: 9
+md5: aba337431a8de04949d027cc48e4b595
+deps:
+- path: 
+    https://github.com/huh-itmo-y27/PARDON/releases/latest/download/models.tar.gz
   hash: md5
-  path: base_models
+outs:
+- md5: f5c0497c6dca5362845f1b7222a2a31c
+  size: 7207724
+  hash: md5
+  path: models-package.tar.gz
