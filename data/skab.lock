@@ -1,0 +1,8 @@
+# Pinned upstream sources for DVC import-url artifacts.
+skab_repo=waico/SKAB
+skab_rev=b2c0d46c2971dcbfe71e26087b6d231998bb91c2
+skab_url=https://codeload.github.com/waico/SKAB/tar.gz/b2c0d46c2971dcbfe71e26087b6d231998bb91c2
+
+# Release artifacts always resolve to the latest GitHub Release at pull time.
+models_url=https://github.com/huh-itmo-y27/PARDON/releases/latest/download/models.tar.gz
+processed_url=https://github.com/huh-itmo-y27/PARDON/releases/latest/download/processed.tar.gz
