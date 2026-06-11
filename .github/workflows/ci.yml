@@ -137,18 +137,7 @@ jobs:
       - name: Install dependencies
         run: uv sync --dev
 
-      - name: Configure DVC remote credentials
-        env:
-          MINIO_ACCESS_KEY: ${{ secrets.MINIO_ACCESS_KEY }}
-          MINIO_SECRET_KEY: ${{ secrets.MINIO_SECRET_KEY }}
-        run: |
-          uv run dvc remote modify --local minio_storage access_key_id "$MINIO_ACCESS_KEY"
-          uv run dvc remote modify --local minio_storage secret_access_key "$MINIO_SECRET_KEY"
-
-      - name: Show DVC config
-        run: uv run dvc config --list
-
-      - name: Pull data and models from DVC
+      - name: Pull data via DVC import-url
         run: make data_pull
 
       - name: Run tests
