@@ -47,15 +47,14 @@ jobs:
           uv run python -m anomaly_detection.dataset --scenario valve1
           uv run python -m anomaly_detection.features
 
-      - name: Train default model bundle
+      - name: Train release model bundle (valve1, project defaults)
         run: |
           for model in isolation_forest conv_ae lstm_ae; do
             uv run python -m anomaly_detection.modeling.train \
               --model-name "$model" \
+              --dataset-scenario valve1 \
               --no-register-model \
               --no-log-to-mlflow \
-              --epochs 1 \
-              --batch-size 8 \
               --verbose 0
           done
 

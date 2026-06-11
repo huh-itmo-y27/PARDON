@@ -70,7 +70,9 @@ Build local release tarballs with:
 ./scripts/build-release-artifacts.sh
 ```
 
-Publish to GitHub Releases:
+Publish to GitHub Releases (workflow **Release data artifacts** trains
+`isolation_forest`, `conv_ae`, and `lstm_ae` on `valve1` with project defaults:
+`epochs=20`, `batch_size=32`):
 
 ```bash
 GITHUB_TOKEN=... RELEASE_TAG=data-v0.1.0 ./scripts/publish-release-artifacts.sh

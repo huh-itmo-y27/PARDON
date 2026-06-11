@@ -29,7 +29,7 @@ if [ -z "$RELEASE_ID" ] || [ "$RELEASE_ID" = "None" ]; then
   echo "Creating release $RELEASE_TAG..."
   RELEASE_ID="$(curl -fsS -X POST -H "$AUTH" -H "Content-Type: application/json" \
     "$API/releases" \
-    -d "{\"tag_name\":\"$RELEASE_TAG\",\"name\":\"$RELEASE_TAG\",\"body\":\"PARDON models and processed data artifacts for DVC import-url.\",\"draft\":false,\"prerelease\":false}" \
+    -d "{\"tag_name\":\"$RELEASE_TAG\",\"name\":\"$RELEASE_TAG\",\"body\":\"PARDON models and processed data for DVC import-url. Trained on SKAB valve1 with project defaults (epochs=20, batch_size=32 for neural models).\",\"draft\":false,\"prerelease\":false}" \
     | python3 -c 'import json,sys; print(json.load(sys.stdin)["id"])')"
 fi
 
