@@ -7,7 +7,7 @@ patches:
 images:
   - name: pardon-api
     newName: ghcr.io/huh-itmo-y27/pardon/api
-    newTag: a05668b39dc3
+    newTag: f9083f1b1bcb
   - name: pardon-ui
     newName: ghcr.io/huh-itmo-y27/pardon/ui
-    newTag: a05668b39dc3
+    newTag: f9083f1b1bcb
