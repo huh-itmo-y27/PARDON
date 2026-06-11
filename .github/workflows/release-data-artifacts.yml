@@ -62,6 +62,7 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_TAG: ${{ github.event.inputs.release_tag || github.ref_name }}
+          TARGET_COMMITISH: ${{ github.sha }}
         run: |
           chmod +x scripts/build-release-artifacts.sh scripts/publish-release-artifacts.sh
           ./scripts/publish-release-artifacts.sh
