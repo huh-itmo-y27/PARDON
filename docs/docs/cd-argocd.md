@@ -10,6 +10,7 @@ cluster state synchronized with Git.
 - UI Docker image: `ghcr.io/huh-itmo-y27/pardon/ui`
 - Kubernetes namespace: `pardon`
 - Deployments: `pardon-api`, `pardon-ui`, `pardon-postgres`
+- PersistentVolumeClaim: `pardon-dvc-data` (models, processed features, SKAB raw CSVs)
 - Services: `pardon-api`, `pardon-ui`, `pardon-postgres`
 - Ingress host: `pardon.local`
 
@@ -23,7 +24,9 @@ deploy/
     base/
       namespace.yaml
       configmap.yaml
+      persistent-volume-claim.yaml
       deployment.yaml
+      dvc-sync-job.yaml
       ingress.yaml
       service.yaml
       kustomization.yaml
@@ -32,6 +35,8 @@ deploy/
         kustomization.yaml
       minikube/
         kustomization.yaml
+        persistent-volume.yaml
+        pvc-patch.yaml
 ```
 
 ## CD flow
@@ -153,6 +158,37 @@ make k8s_port_forward
 
 Open `http://localhost:3001`. The helper also forwards the API to
 `http://localhost:8000`.
+
+## DVC data on Kubernetes
+
+The `pardon-api` Deployment uses a `dvc-pull` initContainer to fetch SKAB raw
+data and release artifacts over HTTPS (DVC `import-url`, no MinIO). Data is
+stored on the `pardon-dvc-data` PVC and mounted into the API pod at:
+
+- `/app/data/raw`
+- `/app/data/processed`
+- `/app/models/base_models`
+
+Minikube binds the PVC to a hostPath PV at `/data/pardon-dvc`. Other clusters
+use the default StorageClass.
+
+Pre-warm data without restarting the API:
+
+```bash
+make k8s_dvc_sync
+```
+
+Inspect sync job logs:
+
+```bash
+kubectl -n pardon logs job/pardon-dvc-sync
+```
+
+The API pod needs outbound HTTPS access to `codeload.github.com` and
+`github.com` on first startup.
+
+Ensure the GitHub **Latest** release includes `models.tar.gz` and
+`processed.tar.gz` (see `releases/latest/download/...` in the DVC files).
 
 ## Useful troubleshooting commands
 

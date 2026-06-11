@@ -38,6 +38,7 @@ detection platform for pump telemetry. It covers the full lifecycle:
 
 ```bash
 make requirements
+make data_pull
 make dataset DATA_SCENARIO=valve1
 make features DATA_SCENARIO=valve1
 make train MODEL=isolation_forest DATA_SCENARIO=valve1
@@ -61,22 +62,27 @@ make monitoring_up
    ```bash
    make requirements
    ```
-2. Build processed dataset and features:
+2. Download versioned SKAB raw data, processed features, and models:
+   ```bash
+   make data_pull
+   ```
+3. Build processed dataset and features:
    ```bash
    make dataset DATA_SCENARIO=valve1
    make features DATA_SCENARIO=valve1
    ```
-3. Train and evaluate:
+4. Train and evaluate:
    ```bash
    make train MODEL=isolation_forest DATA_SCENARIO=valve1
    ```
-4. Generate predictions:
+5. Generate predictions:
    ```bash
    make predict MODEL=isolation_forest DATA_SCENARIO=valve1
    ```
 
-Data is expected under `data/raw` with columns `datetime`, numeric features,
-`anomaly`, and `changepoint`.
+Versioned data is tracked with DVC `import-url` (see `data/skab.dvc`,
+`models/models.dvc`, `data/processed.dvc`). Raw CSVs land under `data/raw` with
+columns `datetime`, numeric features, `anomaly`, and `changepoint`.
 
 ## Local serving runbook (API + Web UI)
 
@@ -143,6 +149,8 @@ Then open `http://localhost:3001` (UI) and `http://localhost:8000/healthz`
 ## Common commands
 
 - `make requirements`: install Python dependencies
+- `make data_pull`: download SKAB raw data, models, and processed features via DVC
+- `make data_pull_skab`: download only SKAB raw scenarios
 - `make dataset DATA_SCENARIO=<scenario>`: generate split datasets
 - `make features DATA_SCENARIO=<scenario>`: build scaled features
 - `make train MODEL=<model> DATA_SCENARIO=<scenario>`: train pipeline
