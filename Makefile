@@ -57,14 +57,14 @@ test:
 ## Download versioned data and models via DVC import-url
 .PHONY: data_pull
 data_pull:
-	uv run dvc pull data/skab.dvc -j 4
+	./scripts/pull-skab-data.sh
 	./scripts/pull-release-artifacts.sh
 	./scripts/extract-skab-data.sh data/external/skab.tar.gz data/raw
 	./scripts/extract-release-artifacts.sh
 
 .PHONY: data_pull_skab
 data_pull_skab:
-	uv run dvc pull data/skab.dvc -j 4
+	./scripts/pull-skab-data.sh
 	./scripts/extract-skab-data.sh data/external/skab.tar.gz data/raw
 
 .PHONY: data_import_release

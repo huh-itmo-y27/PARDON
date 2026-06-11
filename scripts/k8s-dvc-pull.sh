@@ -11,8 +11,8 @@ mkdir -p "$DVC_CACHE_DIR" \
   "$PVC_ROOT/data/external" \
   "$PVC_ROOT/models/base_models"
 
-echo "Pulling SKAB archive..."
-uv run dvc pull data/skab.dvc -j 4
+echo "Fetching SKAB archive..."
+./scripts/pull-skab-data.sh
 
 echo "Updating models/processed from latest GitHub Release..."
 ./scripts/pull-release-artifacts.sh

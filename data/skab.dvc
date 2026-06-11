@@ -1,8 +1,6 @@
-md5: 179baca564288b0838babda90e295d84
-frozen: true
+md5: c3027be135a37dbe50fedac87ed6678b
 deps:
 - checksum: '"652e2a35b06f666b29dfa3840031d95c295b82bc0db6a93ba7eb5c4795892f11"'
-  size: 5391409
   hash: md5
   path: 
     https://codeload.github.com/waico/SKAB/tar.gz/b2c0d46c2971dcbfe71e26087b6d231998bb91c2

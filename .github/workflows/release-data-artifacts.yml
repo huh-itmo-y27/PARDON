@@ -35,7 +35,8 @@ jobs:
 
       - name: Pull SKAB data and build training inputs
         run: |
-          uv run dvc pull data/skab.dvc
+          chmod +x scripts/pull-skab-data.sh scripts/extract-skab-data.sh
+          ./scripts/pull-skab-data.sh
           ./scripts/extract-skab-data.sh data/external/skab.tar.gz data/raw valve1
           uv run python -m anomaly_detection.dataset --scenario valve1
           uv run python -m anomaly_detection.features
