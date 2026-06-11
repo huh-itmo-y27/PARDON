@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.0](https://github.com/huh-itmo-y27/PARDON/compare/v0.2.0...v0.3.0) (2026-06-11)
+
+
+### Features
+
+* add dvc SKAB data retrieval ([#34](https://github.com/huh-itmo-y27/PARDON/issues/34)) ([f9083f1](https://github.com/huh-itmo-y27/PARDON/commit/f9083f1b1bcbc2a7d0336d0244fb2d6805b8e8b0))
+
 ## [0.2.0](https://github.com/huh-itmo-y27/PARDON/compare/v0.1.4...v0.2.0) (2026-06-04)
 
 
