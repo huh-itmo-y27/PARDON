@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.0...v0.3.1) (2026-06-12)
+
+
+### Bug Fixes
+
+* fixed sync and mlflow pods ([#38](https://github.com/huh-itmo-y27/PARDON/issues/38)) ([4e4dd07](https://github.com/huh-itmo-y27/PARDON/commit/4e4dd07121f4da9d8effc21980c6c3457ac4ed1b))
+
 ## [0.3.0](https://github.com/huh-itmo-y27/PARDON/compare/v0.2.0...v0.3.0) (2026-06-11)
 
 
