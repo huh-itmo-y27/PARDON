@@ -1,7 +1,7 @@
 md5: d704f07575a96ff7224fbb95939cefd3
 deps:
 - path: 
-    https://github.com/huh-itmo-y27/PARDON/releases/latest/download/processed.tar.gz
+    https://github.com/huh-itmo-y27/PARDON/releases/download/data-v0.3.0/processed.tar.gz
   hash: md5
 outs:
 - md5: cf557abac0b8dee80b4132d6b6c276d2

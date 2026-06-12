@@ -41,9 +41,10 @@ spec:
             - /bin/sh
             - -c
             - >-
-              uv run mlflow server
+              mlflow server
               --host 0.0.0.0
               --port 5000
+              --workers 1
               --allowed-hosts localhost,127.0.0.1,pardon-mlflow,pardon-mlflow:5000,pardon-mlflow.pardon.svc,pardon-mlflow.pardon.svc.cluster.local,10.*
               --cors-allowed-origins http://localhost:5000,http://localhost:3001,http://pardon.local
               --backend-store-uri sqlite:////mlflow/mlflow.db
@@ -69,10 +70,10 @@ spec:
           resources:
             requests:
               cpu: 100m
-              memory: 256Mi
+              memory: 512Mi
             limits:
               cpu: "1"
-              memory: 1Gi
+              memory: 2Gi
       volumes:
         - name: mlflow-data
           persistentVolumeClaim:
@@ -106,7 +107,7 @@ spec:
             - /bin/sh
             - -c
             - >-
-              uv run python -m anomaly_detection.monitoring.mlflow_exporter
+              python -m anomaly_detection.monitoring.mlflow_exporter
               --tracking-uri http://pardon-mlflow:5000
               --port 8010
           env:
