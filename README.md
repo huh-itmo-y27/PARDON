@@ -143,8 +143,17 @@ NEXT_PUBLIC_API_BASE_URL=http://localhost:8000 npm run dev
    make k8s_port_forward
    ```
 
-Then open `http://localhost:3001` (UI) and `http://localhost:8000/healthz`
-(API health).
+Then open:
+
+- UI: `http://localhost:3001`
+- API health: `http://localhost:8000/healthz`
+- Grafana: `http://localhost:3000` (`admin` / `admin`)
+- MLflow: `http://localhost:5000`
+- Prometheus: `http://localhost:9090`
+- Pushgateway: `http://localhost:9091`
+
+The Argo CD deployment includes API, UI, PostgreSQL, MLflow, Prometheus,
+Pushgateway, MLflow exporter, and Grafana.
 
 ## Common commands
 
@@ -158,6 +167,7 @@ Then open `http://localhost:3001` (UI) and `http://localhost:8000/healthz`
 - `make app_up` / `make app_down`: run local serving stack
 - `make app_smoke`: quick health checks for API and UI
 - `make monitoring_up` / `make monitoring_down`: run monitoring stack
+- `make k8s_port_forward`: forward API, UI, Grafana, MLflow, Prometheus, and Pushgateway from Kubernetes
 - `make openapi_export` + `make ui_codegen`: refresh typed API schema for UI
 
 ## Troubleshooting index
