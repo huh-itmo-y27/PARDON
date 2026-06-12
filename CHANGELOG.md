@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.1...v0.3.2) (2026-06-12)
+
+
+### Bug Fixes
+
+* k8s data artifact URLs and mlflow resources ([#40](https://github.com/huh-itmo-y27/PARDON/issues/40)) ([eb5d545](https://github.com/huh-itmo-y27/PARDON/commit/eb5d5456c4bf6a221347f7555d20f7869fde5234))
+
 ## [0.3.1](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.0...v0.3.1) (2026-06-12)
 
 
