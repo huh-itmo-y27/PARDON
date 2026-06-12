@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.3](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.2...v0.3.3) (2026-06-12)
+
+
+### Bug Fixes
+
+* cd image rebuild triggers ([#42](https://github.com/huh-itmo-y27/PARDON/issues/42)) ([e6085be](https://github.com/huh-itmo-y27/PARDON/commit/e6085be9a661854a6e6796638ca4f415f307bfb8))
+
 ## [0.3.2](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.1...v0.3.2) (2026-06-12)
 
 
