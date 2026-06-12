@@ -44,6 +44,8 @@ spec:
               uv run mlflow server
               --host 0.0.0.0
               --port 5000
+              --allowed-hosts localhost,127.0.0.1,pardon-mlflow,pardon-mlflow:5000,pardon-mlflow.pardon.svc,pardon-mlflow.pardon.svc.cluster.local,10.*
+              --cors-allowed-origins http://localhost:5000,http://localhost:3001,http://pardon.local
               --backend-store-uri sqlite:////mlflow/mlflow.db
               --default-artifact-root /mlflow/artifacts
           ports:
@@ -54,13 +56,13 @@ spec:
               mountPath: /mlflow
           readinessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
             initialDelaySeconds: 20
             periodSeconds: 10
           livenessProbe:
             httpGet:
-              path: /
+              path: /health
               port: http
             initialDelaySeconds: 45
             periodSeconds: 30
