@@ -16,6 +16,34 @@ Default endpoint:
 
 - `http://localhost:5000`
 
+## Kubernetes setup
+
+Argo CD deploys MLflow as `pardon-mlflow` in the `pardon` namespace.
+
+- In-cluster tracking URI: `http://pardon-mlflow:5000`
+- Local port-forward endpoint: `http://localhost:5000`
+- Persistent storage: `pardon-mlflow-data` PVC
+
+The shared Kubernetes ConfigMap sets:
+
+```text
+MLFLOW_TRACKING_URI=http://pardon-mlflow:5000
+MLFLOW_EXPERIMENT_NAME=anomaly_detection
+MLFLOW_INFERENCE_EXPERIMENT_NAME=anomaly_detection_inference
+```
+
+Open locally:
+
+```bash
+kubectl -n pardon port-forward svc/pardon-mlflow 5000:5000
+```
+
+or run the full helper:
+
+```bash
+make k8s_port_forward
+```
+
 ## Experiments
 
 - Training experiment: `anomaly_detection` (configurable)
@@ -45,6 +73,19 @@ Configure in `.env`:
 - `MLFLOW_EXPERIMENT_NAME`
 - `MLFLOW_INFERENCE_EXPERIMENT_NAME`
 - `MLFLOW_REGISTERED_MODEL_PREFIX`
+
+## Kubernetes security notes
+
+Recent MLflow versions validate `Host` and CORS headers. The Kubernetes command
+allows the in-cluster service host and local port-forward host:
+
+- `pardon-mlflow`
+- `pardon-mlflow:5000`
+- `localhost:5000`
+- `127.0.0.1:5000`
+
+If `http://localhost:5000` shows `Invalid Host header`, update
+`--allowed-hosts` in `deploy/k8s/base/observability.yaml` and sync Argo CD.
 
 ## Model registry
 

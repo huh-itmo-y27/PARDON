@@ -1,17 +1,23 @@
 # Continuous Delivery with Argo CD
 
-This project is deployed to Kubernetes as PARDON API + UI services.
-Argo CD watches the `deploy/k8s/overlays/argocd` Kustomize overlay and keeps
-cluster state synchronized with Git.
+This project is deployed to Kubernetes as PARDON API + UI services plus the
+observability stack. Argo CD watches the `deploy/k8s/overlays/argocd`
+Kustomize overlay and keeps cluster state synchronized with Git.
 
 ## What is deployed
 
 - API Docker image: `ghcr.io/huh-itmo-y27/pardon/api`
 - UI Docker image: `ghcr.io/huh-itmo-y27/pardon/ui`
 - Kubernetes namespace: `pardon`
-- Deployments: `pardon-api`, `pardon-ui`, `pardon-postgres`
-- PersistentVolumeClaim: `pardon-dvc-data` (models, processed features, SKAB raw CSVs)
-- Services: `pardon-api`, `pardon-ui`, `pardon-postgres`
+- Deployments: `pardon-api`, `pardon-ui`, `pardon-postgres`,
+  `pardon-mlflow`, `pardon-mlflow-exporter`, `pardon-prometheus`,
+  `pardon-pushgateway`, `pardon-grafana`
+- PersistentVolumeClaims:
+  - `pardon-dvc-data` (models, processed features, SKAB raw CSVs)
+  - `pardon-mlflow-data` (MLflow SQLite backend and artifacts)
+- Services: `pardon-api`, `pardon-ui`, `pardon-postgres`, `pardon-mlflow`,
+  `pardon-mlflow-exporter`, `pardon-prometheus`, `pardon-pushgateway`,
+  `pardon-grafana`
 - Ingress host: `pardon.local`
 
 ## Repository layout
@@ -27,6 +33,11 @@ deploy/
       persistent-volume-claim.yaml
       deployment.yaml
       dvc-sync-job.yaml
+      observability.yaml
+      observability/
+        grafana-dashboards.yml
+        grafana-datasource.yml
+        prometheus.yml
       ingress.yaml
       service.yaml
       kustomization.yaml
@@ -156,14 +167,23 @@ Or forward the UI service locally:
 make k8s_port_forward
 ```
 
-Open `http://localhost:3001`. The helper also forwards the API to
-`http://localhost:8000`.
+Open `http://localhost:3001`. The helper also forwards:
+
+- API: `http://localhost:8000`
+- Grafana: `http://localhost:3000` (`admin` / `admin`)
+- MLflow: `http://localhost:5000`
+- Prometheus: `http://localhost:9090`
+- Pushgateway: `http://localhost:9091`
 
 ## DVC data on Kubernetes
 
 The `pardon-api` Deployment uses a `dvc-pull` initContainer to fetch SKAB raw
-data and release artifacts over HTTPS (DVC `import-url`, no MinIO). Data is
-stored on the `pardon-dvc-data` PVC and mounted into the API pod at:
+data and release artifacts over HTTPS (DVC `import-url`, no MinIO). In
+Kubernetes the image does not include `.git`, so the runtime script treats
+`.dvc` files as URL manifests and downloads their declared artifacts directly.
+Local development still uses `dvc update` when `.git` is present.
+
+Data is stored on the `pardon-dvc-data` PVC and mounted into the API pod at:
 
 - `/app/data/raw`
 - `/app/data/processed`
@@ -178,6 +198,10 @@ Pre-warm data without restarting the API:
 make k8s_dvc_sync
 ```
 
+`pardon-dvc-sync` is an Argo CD Sync hook. Argo recreates it on sync instead of
+patching the immutable Job pod template. Deleting the Job is safe: it removes
+only the Job object and its pods, not the `pardon-dvc-data` PVC.
+
 Inspect sync job logs:
 
 ```bash
@@ -187,8 +211,33 @@ kubectl -n pardon logs job/pardon-dvc-sync
 The API pod needs outbound HTTPS access to `codeload.github.com` and
 `github.com` on first startup.
 
-Ensure the GitHub **Latest** release includes `models.tar.gz` and
-`processed.tar.gz` (see `releases/latest/download/...` in the DVC files).
+Do not use GitHub `releases/latest` for data artifacts: it may point to an app
+release without model/data assets. The `.dvc` files should point to a data
+release such as `data-v0.3.0`, or to a dedicated data-only release tag if one is
+introduced.
+
+## Observability on Kubernetes
+
+The Argo CD deployment includes:
+
+- `pardon-mlflow`: MLflow tracking server (`http://pardon-mlflow:5000`)
+- `pardon-mlflow-exporter`: converts MLflow runs to Prometheus metrics
+- `pardon-prometheus`: scrapes API, Pushgateway, and MLflow exporter metrics
+- `pardon-pushgateway`: accepts metrics from short-lived train/predict jobs
+- `pardon-grafana`: dashboards backed by Prometheus
+
+Prometheus targets:
+
+```text
+pardon-api:8000/metrics
+pardon-pushgateway:9091
+pardon-mlflow-exporter:8010
+```
+
+Grafana dashboards are provisioned at startup from
+`monitoring/grafana/dashboards` via GitHub raw URLs. This avoids duplicating
+large dashboard JSON files under `deploy/k8s`, but the Grafana pod needs
+outbound HTTPS access to GitHub during init.
 
 ## Useful troubleshooting commands
 
@@ -218,6 +267,32 @@ kubectl -n argocd describe applications.argoproj.io pardon
 - Verify API health endpoint returns 200:
 `kubectl -n pardon port-forward svc/pardon-api 8000:8000`
 then `curl http://localhost:8000/healthz`
+
+### `pardon-dvc-sync` fails with `field is immutable`
+
+Kubernetes Jobs cannot have their pod template patched. The Job is configured
+as an Argo CD Sync hook with `BeforeHookCreation`, so new syncs should recreate
+it. For a stuck old Job, delete it and sync again:
+
+```bash
+kubectl -n pardon delete job pardon-dvc-sync --ignore-not-found
+```
+
+This does not delete the `pardon-dvc-data` PVC.
+
+### `dvc-pull` returns `HTTP Error 404`
+
+Check the URLs in `models/models.dvc` and `data/processed.dvc`. They must point
+to a release that actually contains `models.tar.gz` and `processed.tar.gz`.
+Avoid `releases/latest/download/...` unless the latest GitHub release is
+guaranteed to be a data release.
+
+### MLflow shows `Invalid Host header`
+
+MLflow validates the HTTP `Host` header. The Kubernetes command allows
+`localhost:5000` and the in-cluster service host. If this error appears after
+changing access paths, update `--allowed-hosts` in
+`deploy/k8s/base/observability.yaml`.
 
 ### ImagePullBackOff
 

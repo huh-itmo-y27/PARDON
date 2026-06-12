@@ -56,13 +56,13 @@ evaluation and drift reporting.
 
 - SKAB tarball: edit `skab_rev` in `data/skab.lock`, then refresh `data/skab.dvc`
   with `dvc import-url` or `dvc update data/skab.dvc`.
-- Models/processed release: publish a new GitHub Release with `models.tar.gz` and
-  `processed.tar.gz`. The next `make data_pull` picks it up automatically via
-  `releases/latest/download/...` (no `.dvc` edit required).
+- Models/processed release: publish a data GitHub Release with `models.tar.gz`
+  and `processed.tar.gz`, then update `models/models.dvc` and
+  `data/processed.dvc` to that release tag (for example `data-v0.3.0`).
 
-  GitHub **Latest** follows semver: if the newest tag is an app release (e.g.
-  `v0.2.0`) without data assets, attach the tarballs there or publish a higher
-  data tag so it becomes Latest.
+  Do not rely on GitHub `releases/latest/download/...` for data artifacts:
+  Latest may point to an application release without `models.tar.gz` and
+  `processed.tar.gz`.
 
 Build local release tarballs with:
 

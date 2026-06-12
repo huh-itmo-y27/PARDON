@@ -45,7 +45,7 @@ spec:
               --host 0.0.0.0
               --port 5000
               --workers 1
-              --allowed-hosts localhost,127.0.0.1,pardon-mlflow,pardon-mlflow:5000,pardon-mlflow.pardon.svc,pardon-mlflow.pardon.svc.cluster.local,10.*
+              --allowed-hosts localhost,localhost:5000,127.0.0.1,127.0.0.1:5000,pardon-mlflow,pardon-mlflow:5000,pardon-mlflow.pardon.svc,pardon-mlflow.pardon.svc.cluster.local,10.*
               --cors-allowed-origins http://localhost:5000,http://localhost:3001,http://pardon.local
               --backend-store-uri sqlite:////mlflow/mlflow.db
               --default-artifact-root /mlflow/artifacts

@@ -21,16 +21,15 @@ make data_pull
 This downloads:
 
 - SKAB upstream archive from [waico/SKAB](https://github.com/waico/SKAB) (pinned in `data/skab.lock`)
-- `models.tar.gz` and `processed.tar.gz` from the **latest** PARDON GitHub Release
-  (`releases/latest/download/...` in `models/models.dvc` and `data/processed.dvc`)
+- `models.tar.gz` and `processed.tar.gz` from the PARDON data GitHub Release
+  pinned in `models/models.dvc` and `data/processed.dvc`
 
-Each `make data_pull` runs `dvc update` on the release artifacts so you always get
-the newest published models and processed features.
-
-GitHub resolves `releases/latest/download/...` to the repository's current
-**Latest** release (highest semver). That release must include `models.tar.gz` and
-`processed.tar.gz`. If `make data_pull` fails, publish assets with
-`Release data artifacts` or `GITHUB_TOKEN=... make data_import_release`.
+Each `make data_pull` runs `dvc update` locally when `.git` is present. The
+current data artifacts are pinned to a data release such as `data-v0.3.0` for
+reproducibility. Avoid `releases/latest/download/...`: GitHub Latest may point
+to an application release that does not include data assets. If `make data_pull`
+fails with `404`, check the URLs in the `.dvc` files or publish assets with
+`Release data artifacts` / `GITHUB_TOKEN=... make data_import_release`.
 
 SKAB-only pull:
 

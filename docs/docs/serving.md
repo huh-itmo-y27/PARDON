@@ -62,6 +62,11 @@ make app_logs
 - `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`: browser-side API URL for local UI dev
 - `NEXT_PUBLIC_RETRAIN_API_TOKEN=<token>`: UI sends bearer token for retrain action
 
+In Kubernetes, `API_BASE_URL` points to the in-cluster service
+`http://pardon-api:8000`. Browser-side requests from a port-forwarded UI at
+`http://localhost:3001` are mapped to `http://localhost:8000`, so API
+port-forwarding must run at the same time.
+
 ## Two UI usage modes
 
 ### Mode A: UI inside Docker Compose
@@ -167,6 +172,8 @@ minikube addons enable ingress
 - For browser-mode UI, run local UI dev with:
   `NEXT_PUBLIC_API_BASE_URL=http://localhost:8000`
 - Check `PARDON_CORS_ALLOWED_ORIGINS` includes your UI origin
+- In Kubernetes port-forward mode, keep both `pardon-ui` and `pardon-api`
+  forwards running (`make k8s_port_forward`).
 
 ### Predictions table is empty
 

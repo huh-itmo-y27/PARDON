@@ -79,6 +79,42 @@ Use external services by setting:
 
 In this mode, local docker compose is optional.
 
+## Kubernetes stack
+
+Argo CD deploys the monitoring stack in the `pardon` namespace:
+
+- Grafana: `pardon-grafana` (`admin` / `admin`)
+- Prometheus: `pardon-prometheus`
+- Pushgateway: `pardon-pushgateway`
+- MLflow exporter: `pardon-mlflow-exporter`
+
+The same dashboards used by local Grafana are provisioned in Kubernetes. The
+Grafana pod downloads dashboard JSON files from the repository during its init
+container, so it needs outbound HTTPS access to GitHub.
+
+Run:
+
+```bash
+make k8s_port_forward
+```
+
+Open:
+
+- Grafana: `http://localhost:3000`
+- Prometheus: `http://localhost:9090`
+- Pushgateway: `http://localhost:9091`
+- MLflow exporter metrics: `http://localhost:8010/metrics` if forwarded manually
+
+Prometheus Kubernetes scrape targets:
+
+```text
+pardon-api:8000/metrics
+pardon-pushgateway:9091
+pardon-mlflow-exporter:8010
+```
+
+Check target health at `http://localhost:9090/targets`.
+
 ## Troubleshooting empty Grafana panels
 
 If `Recent Train and Predict Runs` or `Operational Health` are empty:
@@ -88,3 +124,13 @@ If `Recent Train and Predict Runs` or `Operational Health` are empty:
    - `PROMETHEUS_PUSHGATEWAY_URL=http://localhost:9091`
 3. Check Pushgateway has app metrics:
    - `http://localhost:9091/metrics` should include `anomaly_pipeline_*`.
+
+For Kubernetes:
+
+1. Confirm pods are ready:
+   - `kubectl -n pardon get pods`
+2. Confirm Prometheus targets are up:
+   - `http://localhost:9090/targets`
+3. Confirm MLflow exporter is serving metrics:
+   - `kubectl -n pardon logs deploy/pardon-mlflow-exporter`
+4. Run at least one train/predict/retrain workflow after monitoring is enabled.
