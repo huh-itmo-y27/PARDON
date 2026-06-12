@@ -3,6 +3,9 @@ kind: Job
 metadata:
   name: pardon-dvc-sync
   namespace: pardon
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation,HookSucceeded
   labels:
     app.kubernetes.io/name: pardon
     app.kubernetes.io/component: dvc-sync
