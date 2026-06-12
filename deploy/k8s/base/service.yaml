@@ -51,3 +51,93 @@ spec:
     - name: http
       port: 3001
       targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pardon-mlflow
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: mlflow
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: mlflow
+  ports:
+    - name: http
+      port: 5000
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pardon-mlflow-exporter
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: mlflow-exporter
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: mlflow-exporter
+  ports:
+    - name: metrics
+      port: 8010
+      targetPort: metrics
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pardon-pushgateway
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: pushgateway
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: pushgateway
+  ports:
+    - name: http
+      port: 9091
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pardon-prometheus
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: prometheus
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: prometheus
+  ports:
+    - name: http
+      port: 9090
+      targetPort: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: pardon-grafana
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: grafana
+spec:
+  type: ClusterIP
+  selector:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: grafana
+  ports:
+    - name: http
+      port: 3000
+      targetPort: http
