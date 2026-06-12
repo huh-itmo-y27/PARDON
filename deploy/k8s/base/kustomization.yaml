@@ -5,6 +5,22 @@ resources:
   - configmap.yaml
   - persistent-volume-claim.yaml
   - deployment.yaml
+  - observability.yaml
   - dvc-sync-job.yaml
   - service.yaml
   - ingress.yaml
+configMapGenerator:
+  - name: pardon-prometheus-config
+    namespace: pardon
+    files:
+      - prometheus.yml=observability/prometheus.yml
+  - name: pardon-grafana-datasource
+    namespace: pardon
+    files:
+      - datasource.yml=observability/grafana-datasource.yml
+  - name: pardon-grafana-dashboard-provider
+    namespace: pardon
+    files:
+      - dashboards.yml=observability/grafana-dashboards.yml
+generatorOptions:
+  disableNameSuffixHash: true

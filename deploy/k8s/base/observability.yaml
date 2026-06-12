@@ -1,0 +1,337 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pardon-mlflow-data
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: mlflow
+spec:
+  accessModes:
+    - ReadWriteOnce
+  resources:
+    requests:
+      storage: 2Gi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pardon-mlflow
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: mlflow
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pardon
+      app.kubernetes.io/component: mlflow
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pardon
+        app.kubernetes.io/component: mlflow
+    spec:
+      containers:
+        - name: mlflow
+          image: pardon-api
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - >-
+              uv run mlflow server
+              --host 0.0.0.0
+              --port 5000
+              --backend-store-uri sqlite:////mlflow/mlflow.db
+              --default-artifact-root /mlflow/artifacts
+          ports:
+            - name: http
+              containerPort: 5000
+          volumeMounts:
+            - name: mlflow-data
+              mountPath: /mlflow
+          readinessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: mlflow-data
+          persistentVolumeClaim:
+            claimName: pardon-mlflow-data
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pardon-mlflow-exporter
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: mlflow-exporter
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pardon
+      app.kubernetes.io/component: mlflow-exporter
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pardon
+        app.kubernetes.io/component: mlflow-exporter
+    spec:
+      containers:
+        - name: mlflow-exporter
+          image: pardon-api
+          imagePullPolicy: IfNotPresent
+          command:
+            - /bin/sh
+            - -c
+            - >-
+              uv run python -m anomaly_detection.monitoring.mlflow_exporter
+              --tracking-uri http://pardon-mlflow:5000
+              --port 8010
+          env:
+            - name: MLFLOW_TRACKING_URI
+              value: http://pardon-mlflow:5000
+          ports:
+            - name: metrics
+              containerPort: 8010
+          readinessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /metrics
+              port: metrics
+            initialDelaySeconds: 45
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pardon-pushgateway
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: pushgateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pardon
+      app.kubernetes.io/component: pushgateway
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pardon
+        app.kubernetes.io/component: pushgateway
+    spec:
+      containers:
+        - name: pushgateway
+          image: prom/pushgateway:latest
+          ports:
+            - name: http
+              containerPort: 9091
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pardon-prometheus
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: prometheus
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pardon
+      app.kubernetes.io/component: prometheus
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pardon
+        app.kubernetes.io/component: prometheus
+    spec:
+      containers:
+        - name: prometheus
+          image: prom/prometheus:latest
+          args:
+            - --config.file=/etc/prometheus/prometheus.yml
+            - --storage.tsdb.path=/prometheus
+          ports:
+            - name: http
+              containerPort: 9090
+          volumeMounts:
+            - name: prometheus-config
+              mountPath: /etc/prometheus
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /-/ready
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /-/healthy
+              port: http
+            initialDelaySeconds: 30
+            periodSeconds: 20
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "1"
+              memory: 1Gi
+      volumes:
+        - name: prometheus-config
+          configMap:
+            name: pardon-prometheus-config
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: pardon-grafana
+  namespace: pardon
+  labels:
+    app.kubernetes.io/name: pardon
+    app.kubernetes.io/component: grafana
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: pardon
+      app.kubernetes.io/component: grafana
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: pardon
+        app.kubernetes.io/component: grafana
+    spec:
+      initContainers:
+        - name: fetch-dashboards
+          image: curlimages/curl:latest
+          command:
+            - /bin/sh
+            - -c
+            - >-
+              set -eu;
+              base="https://raw.githubusercontent.com/huh-itmo-y27/PARDON/main/monitoring/grafana/dashboards";
+              for file in
+              recent-runs.json
+              operational-health.json
+              mlflow-quality.json
+              nab-analysis.json
+              mlflow-static-overview.json
+              drift-artifacts.json
+              model-grouped-experiments.json;
+              do
+                curl -fsSL "$base/$file" -o "/var/lib/grafana/dashboards/$file";
+              done
+          volumeMounts:
+            - name: grafana-dashboards
+              mountPath: /var/lib/grafana/dashboards
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 250m
+              memory: 256Mi
+      containers:
+        - name: grafana
+          image: grafana/grafana:latest
+          env:
+            - name: GF_SECURITY_ADMIN_USER
+              value: admin
+            - name: GF_SECURITY_ADMIN_PASSWORD
+              value: admin
+          ports:
+            - name: http
+              containerPort: 3000
+          volumeMounts:
+            - name: grafana-datasource
+              mountPath: /etc/grafana/provisioning/datasources
+              readOnly: true
+            - name: grafana-dashboard-provider
+              mountPath: /etc/grafana/provisioning/dashboards
+              readOnly: true
+            - name: grafana-dashboards
+              mountPath: /var/lib/grafana/dashboards
+              readOnly: true
+          readinessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 20
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/health
+              port: http
+            initialDelaySeconds: 45
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
+      volumes:
+        - name: grafana-datasource
+          configMap:
+            name: pardon-grafana-datasource
+        - name: grafana-dashboard-provider
+          configMap:
+            name: pardon-grafana-dashboard-provider
+        - name: grafana-dashboards
+          emptyDir: {}
