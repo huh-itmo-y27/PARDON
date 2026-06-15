@@ -10,13 +10,19 @@ from typing import Any
 from uuid import uuid4
 
 import joblib
+from loguru import logger
 import pandas as pd
+from prometheus_client import Counter, Gauge
 from sqlalchemy import case, desc, func, select
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import Session
 
 from anomaly_detection.config import CHANGEPOINT_COL, LABEL_COL, TIMESTAMP_COL
+from anomaly_detection.config import MLFLOW_INFERENCE_EXPERIMENT_NAME
 from anomaly_detection.config import MLFLOW_TRACKING_URI
+from anomaly_detection.config import MONITORING_ENABLED
+from anomaly_detection.config import PROMETHEUS_GROUPING_ENV
+from anomaly_detection.config import PROMETHEUS_GROUPING_SERVICE
 from anomaly_detection.modeling.models import load_model
 from anomaly_detection.monitoring.drift import compute_concept_proxy, compute_data_drift
 
@@ -32,6 +38,59 @@ from .models import (
 from .schemas import PredictRequest, PredictionItem, RetrainRequest
 
 _retrain_guard = threading.Lock()
+_API_PREDICT_DATASET = "api"
+_INFERENCE_METRIC_LABELS = [
+    "environment",
+    "service",
+    "model_name",
+    "dataset_scenario",
+]
+
+api_predict_requests_total = Counter(
+    "pardon_api_predict_requests_total",
+    "Successful predict requests handled by PARDON API.",
+    ["model_name"],
+)
+api_inference_rows_total = Gauge(
+    "anomaly_pipeline_rows_total",
+    "Rows processed by the latest API prediction request.",
+    _INFERENCE_METRIC_LABELS,
+)
+api_inference_anomaly_rate = Gauge(
+    "anomaly_pipeline_anomaly_rate",
+    "Anomaly rate in the latest API prediction request.",
+    _INFERENCE_METRIC_LABELS,
+)
+api_inference_avg_score = Gauge(
+    "anomaly_pipeline_avg_score",
+    "Average anomaly score in the latest API prediction request.",
+    _INFERENCE_METRIC_LABELS,
+)
+api_inference_max_score = Gauge(
+    "anomaly_pipeline_max_score",
+    "Maximum anomaly score in the latest API prediction request.",
+    _INFERENCE_METRIC_LABELS,
+)
+api_inference_data_drift_score = Gauge(
+    "anomaly_pipeline_data_drift_score",
+    "Aggregate data drift score for the latest API prediction request.",
+    _INFERENCE_METRIC_LABELS,
+)
+api_inference_concept_drift_score = Gauge(
+    "anomaly_pipeline_concept_drift_score",
+    "Concept drift proxy score for the latest API prediction request.",
+    _INFERENCE_METRIC_LABELS,
+)
+api_inference_job_duration_seconds = Gauge(
+    "anomaly_pipeline_job_duration_seconds",
+    "Runtime of the latest API prediction request in seconds.",
+    _INFERENCE_METRIC_LABELS,
+)
+api_inference_run_success = Gauge(
+    "anomaly_pipeline_run_success",
+    "Run success marker for the latest API prediction request.",
+    _INFERENCE_METRIC_LABELS,
+)
 
 
 def _utc_now() -> datetime:
@@ -52,6 +111,7 @@ def _load_model_metadata(model_name: str) -> tuple[Any, dict[str, Any], list[str
 def run_inference(
     payload: PredictRequest, db: Session
 ) -> tuple[list[PredictionItem], dict[str, Any]]:
+    started_at = time.perf_counter()
     model, metadata, feature_columns, scaler = _load_model_metadata(payload.model_name)
     if not feature_columns:
         raise ValueError("Feature columns are not available in model metadata.")
@@ -102,7 +162,123 @@ def run_inference(
     )
     drift_payload = {"data_drift": data_drift, "concept_drift_proxy": concept}
     _store_drift_notification(db, drift_payload)
+    _record_inference_telemetry(
+        payload=payload,
+        records_count=len(result),
+        anomalies_count=int(flags.sum()),
+        avg_score=sum(item.score for item in result) / len(result),
+        max_score=max(item.score for item in result),
+        drift=drift_payload,
+        duration_seconds=time.perf_counter() - started_at,
+    )
     return result, drift_payload
+
+
+def _record_inference_telemetry(
+    *,
+    payload: PredictRequest,
+    records_count: int,
+    anomalies_count: int,
+    avg_score: float,
+    max_score: float,
+    drift: dict[str, Any],
+    duration_seconds: float,
+) -> None:
+    anomaly_rate = anomalies_count / records_count if records_count else 0.0
+    data_drift_score = float(drift.get("data_drift", {}).get("data_drift_score", 0.0))
+    concept_drift_score = float(
+        drift.get("concept_drift_proxy", {}).get(
+            "concept_drift_proxy_score", 0.0
+        )
+    )
+    if MONITORING_ENABLED:
+        labels = {
+            "environment": PROMETHEUS_GROUPING_ENV,
+            "service": PROMETHEUS_GROUPING_SERVICE,
+            "model_name": payload.model_name,
+            "dataset_scenario": _API_PREDICT_DATASET,
+        }
+        api_predict_requests_total.labels(model_name=payload.model_name).inc()
+        api_inference_rows_total.labels(**labels).set(float(records_count))
+        api_inference_anomaly_rate.labels(**labels).set(anomaly_rate)
+        api_inference_avg_score.labels(**labels).set(avg_score)
+        api_inference_max_score.labels(**labels).set(max_score)
+        api_inference_data_drift_score.labels(**labels).set(data_drift_score)
+        api_inference_concept_drift_score.labels(**labels).set(concept_drift_score)
+        api_inference_job_duration_seconds.labels(**labels).set(duration_seconds)
+        api_inference_run_success.labels(**labels).set(1.0)
+
+    threading.Thread(
+        target=_log_inference_to_mlflow,
+        kwargs={
+            "request_id": payload.request_id,
+            "model_name": payload.model_name,
+            "records_count": records_count,
+            "anomalies_count": anomalies_count,
+            "anomaly_rate": anomaly_rate,
+            "avg_score": avg_score,
+            "max_score": max_score,
+            "data_drift_score": data_drift_score,
+            "concept_drift_score": concept_drift_score,
+            "duration_seconds": duration_seconds,
+        },
+        daemon=True,
+    ).start()
+
+
+def _log_inference_to_mlflow(
+    *,
+    request_id: str,
+    model_name: str,
+    records_count: int,
+    anomalies_count: int,
+    anomaly_rate: float,
+    avg_score: float,
+    max_score: float,
+    data_drift_score: float,
+    concept_drift_score: float,
+    duration_seconds: float,
+) -> None:
+    try:
+        import mlflow
+    except ModuleNotFoundError:
+        logger.warning("MLflow is not installed; skipping inference run logging.")
+        return
+
+    try:
+        mlflow.set_tracking_uri(MLFLOW_TRACKING_URI)
+        mlflow.set_experiment(MLFLOW_INFERENCE_EXPERIMENT_NAME)
+        run_name = f"infer_{model_name}_{request_id[:8]}"
+        with mlflow.start_run(run_name=run_name):
+            mlflow.log_params(
+                {
+                    "model_name": model_name,
+                    "request_id": request_id,
+                    "source": "api",
+                    "dataset_scenario": _API_PREDICT_DATASET,
+                    "records_count": str(records_count),
+                }
+            )
+            mlflow.log_metrics(
+                {
+                    "records_count": float(records_count),
+                    "anomalies_count": float(anomalies_count),
+                    "anomaly_rate": anomaly_rate,
+                    "avg_score": avg_score,
+                    "max_score": max_score,
+                    "infer_data_drift_score": data_drift_score,
+                    "infer_concept_drift_proxy_score": concept_drift_score,
+                    "infer_duration_seconds": duration_seconds,
+                }
+            )
+            mlflow.set_tags(
+                {
+                    "pardon.request_id": request_id,
+                    "pardon.source": "api_predict",
+                }
+            )
+    except Exception as exc:  # pragma: no cover - telemetry must not break predict
+        logger.warning("Could not log API inference telemetry to MLflow: {}", exc)
 
 
 def _store_drift_notification(db: Session, drift: dict[str, Any]) -> None:

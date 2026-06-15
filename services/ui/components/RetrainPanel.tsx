@@ -9,6 +9,14 @@ import {
   startRetrain,
 } from "../app/api";
 
+const RETRAIN_MODEL_OPTIONS = [
+  "isolation_forest",
+  "conv_ae",
+  "lstm_ae",
+  "tcn_ae",
+  "vae",
+];
+
 export function RetrainPanel() {
   const [modelName, setModelName] = useState("isolation_forest");
   const [datasetScenario, setDatasetScenario] = useState("all");
@@ -18,11 +26,7 @@ export function RetrainPanel() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [autoScrollLogs, setAutoScrollLogs] = useState(true);
-  const [modelOptions, setModelOptions] = useState<string[]>([
-    "isolation_forest",
-    "conv_ae",
-    "lstm_ae",
-  ]);
+  const [modelOptions, setModelOptions] = useState<string[]>(RETRAIN_MODEL_OPTIONS);
   const [scenarioOptions, setScenarioOptions] = useState<string[]>(["all"]);
 
   useEffect(() => {
@@ -31,7 +35,12 @@ export function RetrainPanel() {
         const experiments = await getExperiments(200);
         const models = Array.from(
           new Set(
-            experiments.map((x) => x.model_name).filter((x) => x && x.length > 0)
+            [
+              ...RETRAIN_MODEL_OPTIONS,
+              ...experiments
+                .map((x) => x.model_name)
+                .filter((x) => x && x.length > 0),
+            ]
           )
         );
         if (models.length > 0) {

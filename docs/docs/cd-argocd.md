@@ -10,14 +10,14 @@ Kustomize overlay and keeps cluster state synchronized with Git.
 - UI Docker image: `ghcr.io/huh-itmo-y27/pardon/ui`
 - Kubernetes namespace: `pardon`
 - Deployments: `pardon-api`, `pardon-ui`, `pardon-postgres`,
-  `pardon-mlflow`, `pardon-mlflow-exporter`, `pardon-prometheus`,
-  `pardon-pushgateway`, `pardon-grafana`
+`pardon-mlflow`, `pardon-mlflow-exporter`, `pardon-prometheus`,
+`pardon-pushgateway`, `pardon-grafana`
 - PersistentVolumeClaims:
   - `pardon-dvc-data` (models, processed features, SKAB raw CSVs)
   - `pardon-mlflow-data` (MLflow SQLite backend and artifacts)
 - Services: `pardon-api`, `pardon-ui`, `pardon-postgres`, `pardon-mlflow`,
-  `pardon-mlflow-exporter`, `pardon-prometheus`, `pardon-pushgateway`,
-  `pardon-grafana`
+`pardon-mlflow-exporter`, `pardon-prometheus`, `pardon-pushgateway`,
+`pardon-grafana`
 - Ingress host: `pardon.local`
 
 ## Repository layout
@@ -134,7 +134,7 @@ kubectl -n argocd describe applications.argoproj.io pardon
 ## Open Argo CD UI
 
 ```bash
-kubectl -n argocd port-forward svc/argocd-server 8080:443
+kubectl apply -f deploy/argocd/application.yaml
 ```
 
 Open `https://localhost:8080`.

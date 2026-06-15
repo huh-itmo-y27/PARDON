@@ -37,8 +37,11 @@ TRAIN_METRICS = [
 ]
 
 INFER_METRICS = [
+    "records_count",
+    "anomalies_count",
     "anomaly_rate",
     "avg_score",
+    "max_score",
     "infer_data_drift_score",
     "infer_target_drift_score",
     "infer_concept_drift_proxy_score",
