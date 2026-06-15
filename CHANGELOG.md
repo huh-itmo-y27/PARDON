@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.6](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.5...v0.3.6) (2026-06-15)
+
+
+### Bug Fixes
+
+* arm64 UI image ([#54](https://github.com/huh-itmo-y27/PARDON/issues/54)) ([4fc9818](https://github.com/huh-itmo-y27/PARDON/commit/4fc98184ebe3b830926d3b410d7f8a2e16f3d7ea))
+
 ## [0.3.5](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.4...v0.3.5) (2026-06-15)
 
 
