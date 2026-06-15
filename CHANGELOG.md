@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.4](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.3...v0.3.4) (2026-06-15)
+
+
+### Bug Fixes
+
+* changed pods resources ([#49](https://github.com/huh-itmo-y27/PARDON/issues/49)) ([e2f46ce](https://github.com/huh-itmo-y27/PARDON/commit/e2f46cecf679fb58a3d3bc35439e29e8b8fdb97a))
+
 ## [0.3.3](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.2...v0.3.3) (2026-06-12)
 
 
