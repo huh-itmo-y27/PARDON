@@ -134,7 +134,7 @@ kubectl -n argocd describe applications.argoproj.io pardon
 ## Open Argo CD UI
 
 ```bash
-kubectl apply -f deploy/argocd/application.yaml
+kubectl -n argocd port-forward svc/argocd-server 8080:443
 ```
 
 Open `https://localhost:8080`.
