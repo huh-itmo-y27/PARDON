@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.5](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.4...v0.3.5) (2026-06-15)
+
+
+### Bug Fixes
+
+* changed memmory limit for retrain ([#52](https://github.com/huh-itmo-y27/PARDON/issues/52)) ([af13b1c](https://github.com/huh-itmo-y27/PARDON/commit/af13b1cd59a71d7aaf8920e4c01750911728b464))
+
 ## [0.3.4](https://github.com/huh-itmo-y27/PARDON/compare/v0.3.3...v0.3.4) (2026-06-15)
 
 
