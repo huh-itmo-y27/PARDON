@@ -128,7 +128,6 @@ jobs:
     needs:
       - changes
       - metadata
-    runs-on: ubuntu-latest
     strategy:
       fail-fast: false
       matrix:
@@ -137,18 +136,21 @@ jobs:
             dockerfile: services/api/Dockerfile
             platform: linux/amd64
             arch: amd64
+            runs_on: ubuntu-latest
             cache_scope: pardon-api-amd64
             build_args: ""
           - service: api
             dockerfile: services/api/Dockerfile
             platform: linux/arm64
             arch: arm64
+            runs_on: ubuntu-24.04-arm
             cache_scope: pardon-api-arm64
             build_args: ""
           - service: ui
             dockerfile: services/ui/Dockerfile
             platform: linux/amd64
             arch: amd64
+            runs_on: ubuntu-latest
             cache_scope: pardon-ui-amd64
             build_args: |
               NEXT_PUBLIC_API_BASE_URL=http://pardon-api:8000
@@ -156,9 +158,11 @@ jobs:
             dockerfile: services/ui/Dockerfile
             platform: linux/arm64
             arch: arm64
+            runs_on: ubuntu-24.04-arm
             cache_scope: pardon-ui-arm64
             build_args: |
               NEXT_PUBLIC_API_BASE_URL=http://pardon-api:8000
+    runs-on: ${{ matrix.runs_on }}
 
     steps:
       - name: Checkout repository
@@ -170,21 +174,21 @@ jobs:
           registry: ghcr.io
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
-      
-      - name: Set up QEMU
-        if: matrix.arch == 'arm64'
-        uses: docker/setup-qemu-action@v3
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
 
       - name: Build and push ${{ matrix.service }} ${{ matrix.arch }} image
         uses: docker/build-push-action@v6
+        env:
+          DOCKER_BUILD_SUMMARY: false
         with:
           context: .
           file: ${{ matrix.dockerfile }}
           platforms: ${{ matrix.platform }}
           push: true
+          provenance: false
+          sbom: false
           cache-from: type=gha,scope=${{ matrix.cache_scope }}
           cache-to: type=gha,scope=${{ matrix.cache_scope }},mode=max
           build-args: ${{ matrix.build_args }}
